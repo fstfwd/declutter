@@ -16,8 +16,8 @@ function trim(str) {
 
 
 /**
-* Declutter
-*/
+ * Declutter
+ */
 
 function declutter(node, opt) {
   opt = merge({}, declutter.defaults, opt || {});
@@ -25,13 +25,13 @@ function declutter(node, opt) {
 
 
 /**
-* Options
-*/
+ * Options
+ */
 
 declutter.options =
 declutter.setOptions = function(opt) {
- merge(declutter.defaults, opt);
- return declutter;
+  merge(declutter.defaults, opt);
+  return declutter;
 };
 
 declutter.defaults = {
@@ -39,8 +39,8 @@ declutter.defaults = {
 
 
 /**
-* Expose
-*/
+ * Expose
+ */
 
 if (typeof exports === 'object') {
   module.exports = declutter;
