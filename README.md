@@ -5,7 +5,7 @@ The core algorithm is based on the original Arc90's [Readability](https://code.g
 
 ## Design
 
-A DOM to DOM converter designed for web clipping. So no support for fetching next page links, Readability UI, or footnotes. And it only works in the browser.
+Designed for web clipping. So no support for fetching next page links, Readability UI, or footnotes. And it only works in the browser.
 
 * A DOM to DOM converter.
 * Unobtrusive. The original DOM is kept intact.
