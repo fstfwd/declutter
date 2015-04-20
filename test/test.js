@@ -5,6 +5,7 @@ var declutter = require("../declutter");
 var jsdom = require("jsdom").jsdom;
 var prettyPrint = require("html").prettyPrint;
 
+// Load test pages
 var testPageRoot = path.join(__dirname, "data");
 var testPages = fs.readdirSync(testPageRoot).map(function(dir) {
   return {
@@ -15,7 +16,8 @@ var testPages = fs.readdirSync(testPageRoot).map(function(dir) {
   };
 });
 
-describe('Test Pages', function() {
+// Run tests
+describe("Test pages", function() {
   testPages.forEach(function(testPage) {
     describe(testPage.dir, function() {
       var result;
