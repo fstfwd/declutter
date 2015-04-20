@@ -1,0 +1,27 @@
+{
+  "name": "declutter",
+  "version": "1.0.0",
+  "description": "Remove clutter from HTML.",
+  "main": "declutter.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ylian/declutter.git"
+  },
+  "author": "Yaogang Lian",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ylian/declutter/issues"
+  },
+  "homepage": "https://github.com/ylian/declutter",
+  "devDependencies": {
+    "html": "0.0.10",
+    "jsdom": "^5.0.1",
+    "mocha": "^2.2.4"
+  }
+}
