@@ -10,19 +10,6 @@
  * Helper Functions
  */
 
-function merge(obj) {
-  var i = 1, target, key;
-  for (; i < arguments.length; i++) {
-    target = arguments[i];
-    for (key in target) {
-      if (Object.prototype.hasOwnProperty.call(target, key)) {
-        obj[key] = target[key];
-      }
-    }
-  }
-  return obj;
-}
-
 
 /**
  * Declutter
@@ -44,24 +31,9 @@ var regexps = {
   videos: /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
 };
 
-function declutter(node, opt) {
-  opt = merge({}, declutter.defaults, opt || {});
-  return {title: '', content: ''};
+function declutter(node) {
+  return null;
 }
-
-
-/**
- * Options
- */
-
-declutter.options =
-declutter.setOptions = function(opt) {
-  merge(declutter.defaults, opt);
-  return declutter;
-};
-
-declutter.defaults = {
-};
 
 
 /**
