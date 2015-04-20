@@ -21,7 +21,7 @@
   "homepage": "https://github.com/ylian/declutter",
   "devDependencies": {
     "html": "0.0.10",
-    "jsdom": "^5.0.1",
-    "mocha": "^2.2.4"
+    "jsdom": "4.3.0",
+    "mocha": "2.2.4"
   }
 }

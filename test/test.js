@@ -15,15 +15,13 @@ var testPages = fs.readdirSync(testPageRoot).map(function(dir) {
   };
 });
 
-console.log(testPages);
-
 describe('Test Pages', function() {
   testPages.forEach(function(testPage) {
     describe(testPage.dir, function() {
       var result;
-      before(fundction() {
+      before(function() {
         var doc = jsdom(testPage.source);
-        result = declutter(doc.documentElement, options);
+        result = declutter(doc.documentElement);
       });
 
       it("should extract expected content", function() {
