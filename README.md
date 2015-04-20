@@ -1,5 +1,5 @@
 # declutter
-Remove clutter from HTML. Written in JavaScript.
+A small JavaScript library that removes clutter from HTML.
 
 The core algorithm is based on the original Arc90's [Readability](https://code.google.com/p/arc90labs-readability/) project.
 
