@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Use CoffeeScript to Write Config Files | Yaogang Lian</title>
+  <meta name="description" content="" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Yaogang Lian">
+
+  <script src="../declutter.js"></script>
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="/images/bio-photo.jpg" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Yaogang Lian</h1>
+            <h2 class="blog-description"></h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2013-07-17T04:00:00.000Z" itemprop="datePublished">
+          Jul 17 2013
+      </time>
+    
+</span>
+    <h1 class="post-title">Use CoffeeScript to Write Config Files</h1>
+    <section class="post-content">
+      <p>One cool thing about CoffeeScript is that its succinct and expressive syntax is perfect for writing config files. When I was finalizing package management in <a href="https://github.com/Axonify/muffin.io" target="_blank" rel="external">muffin.io</a> today (I will talk about muffin’s package management in another post), I spent some time thinking about the best way to specify package dependencies in a config file.</p>
+<p>Since <a href="https://github.com/Axonify/muffin.io" target="_blank" rel="external">muffin</a>‘s package management largely follows TJ Holowaychuk’s <a href="http://tjholowaychuk.com/post/27984551477/components" target="_blank" rel="external">Components</a>, the first thing I tried was to set the depenencies in a <code>component.json</code> file. However, a muffin app isn’t really a component —- a component is supposely to be a small, reusable piece of code. So using <code>component.json</code> isn’t quite right.</p>
+<p>That’s easy to fix. I renamed <code>component.json</code> to <code>muffin.json</code> and plowed on. Writing the config file in JSON has the nice benefit that pretty much everyone knows how to edit a JSON file. It’s not particularly compact, and you have to be careful with pitfalls such as closing brackets and commas, but I was willing to live with that. Everything went quite smoothly —- until the end.</p>
+<p>Near the end of the file I ran into a JSON error. It should be quite obvious but I was tired after tiptoeing around for so long.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">"concat": [</div><div class="line">  "javascripts/apps/main/start"</div><div class="line">],</div><div class="line">"aliases": [</div><div class="line">  "apps": "javascripts/apps",</div><div class="line">  "lib": "javascripts/lib",</div><div class="line">  "vendor": "javascripts/vendor"</div><div class="line">],</div></pre></td></tr></table></figure>
+
+<p>It took me a while to realize my stupid mistake —- “aliases” is a map, not a list.</p>
+<p>This was the tipping point for me —- by then I really missed CoffeeScript —- and I quickly rewrote the whole file in CoffeeScript and renamed it to “config.coffee”. The last part of the file now looks like this:</p>
+<figure class="highlight coffee"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="attribute">concat</span>: [</div><div class="line">  <span class="string">'javascripts/apps/main/start'</span></div><div class="line">]</div><div class="line"><span class="attribute">aliases</span>:</div><div class="line">  <span class="attribute">apps</span>: <span class="string">'javascripts/apps'</span></div><div class="line">  <span class="attribute">lib</span>: <span class="string">'javascripts/lib'</span></div><div class="line">  <span class="attribute">vendor</span>: <span class="string">'javascripts/vendor'</span></div></pre></td></tr></table></figure>
+
+<p>No more worrying about missing commas, curly brackets or double quotes. The entire config file written in CoffeeScript is 10 lines shorter, easier to read and easier to edit. Life is good again.</p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>Yaogang Lian</h4>
+    <p>An iOS, Mac and web developer. Focusing on building productivity and educational apps.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yaoganglian.com/2013/07/17/use-coffeescript-to-write-config-files/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yaoganglian.com/2013/07/17/use-coffeescript-to-write-config-files/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yaoganglian.com/2013/07/17/use-coffeescript-to-write-config-files/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2013/08/04/scratch-your-own-itch/">
+        ← Scratch Your Own Itch
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2013/07/17/javascript-class-from-string/">
+        Instantiate a JavaScript Object from the Class Name String →
+    </a>
+    
+</nav>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Yaogang Lian</a> &copy; 2015 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-42184889-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+
+
+
+</body>
+</html>

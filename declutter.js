@@ -65,7 +65,7 @@ function contentScoreForClassName(className) {
   if (className === '') return 0;
   var contentScore = 0;
   if (regexps.negative.test(className)) contentScore -= 25;
-  if (regexps.positive.test(classname)) contentScore += 25;
+  if (regexps.positive.test(className)) contentScore += 25;
   return contentScore;
 }
 
@@ -121,27 +121,27 @@ function cleanNode(node) {
 
       // Add points for any commas within this paragraph
       var innerText = node.innerText.trim();
-      contentScore += innerText.split(',').length;
+      el.contentScore += innerText.split(',').length;
 
       // For every 100 characters in this paragraph, add another point. Up to 3 points.
-      contentScore += Math.min(Math.floor(innerText.length / 100), 3);
-      if (!topCandidate || contentScore > topCandidate.contentScore) {
+      el.contentScore += Math.min(Math.floor(innerText.length / 100), 3);
+      if (!topCandidate || el.contentScore > topCandidate.contentScore) {
         topCandidate = el;
       }
 
       // Add the score to the parent.
       var parent = el.parentNode;
       if (parent) {
-        parent.contentScore += contentScore;
+        parent.contentScore += el.contentScore;
         if (!topCandidate || parent.contentScore > topCandidate.contentScore) {
           topCandidate = parent;
         }
       }
 
       // The grandparent gets half.
-      var grandparent = parentNode ? parentNode.parentNode : null;
+      var grandparent = parent ? parent.parentNode : null;
       if (grandparent) {
-        grandparent.contentScore += contentScore / 2;
+        grandparent.contentScore += el.contentScore / 2;
         if (!topCandidate || grandparent.contentScore > topCandidate.contentScore) {
           topCandidate = grandparent;
         }
@@ -168,6 +168,7 @@ function getContent() {
   for (var i=0, l=siblingNodes.length; i<l; i++) {
     var sibling = siblingNodes[i];
     var append = false;
+    if (!sibling) continue;
 
     if (sibling === topCandidate) append = true;
 
