@@ -11,7 +11,8 @@ Designed for web clipping. So no support for fetching next page links, Readabili
 
 * A DOM to DOM converter.
 * Unobtrusive. The original DOM is kept intact.
-* Focus on speed and accuracy. It should be fast even on mobile devices.
+* Handles HTML5 tags such as `<article>` and `<section>`.
+* Blazingly fast. Even on mobile devices.
 
 ## Run Tests
 

@@ -32,7 +32,7 @@ testPages = testPages.filter(function(testPage) {
   return referenceTestPages.indexOf(testPage.dir) !== -1;
 });
 
-suite("Declutter test page perf", function () {
+suite("declutter test page perf", function () {
   set("iterations", 1);
   set("type", "static");
   testPages.forEach(function(testPage) {
