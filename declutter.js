@@ -84,12 +84,21 @@ function contentScoreForId(id) {
   return contentScore;
 }
 
+function getInnerText(node) {
+  var innerText = node.innerText;
+  if (innerText) {
+    return innerText.trim();
+  } else {
+    return '';
+  }
+}
+
 function getLinkDensity(node) {
   var links = node.getElementsByTagName('a');
-  var textLength = node.innerText.trim().length;
+  var textLength = getInnerText(node).length;
   var linkLength = 0;
   for (var i=0, l=links.length; i<l; i++) {
-    linkLength += links[i].innerText.trim().length;
+    linkLength += getInnerText(links[i]).length;
   }
   return linkLength / textLength;
 }
@@ -103,14 +112,14 @@ var topCandidate;
 
 function declutter(node, doc) {
   topCandidate = null;
-  cleanNode(node);
+  cleanNode(node, doc);
   return getContent(doc);
 }
 
 // Clean up a node recursively
-function cleanNode(node) {
+function cleanNode(node, doc) {
   if (node.nodeType === 3) { // Text node
-    return document.createTextNode(node.nodeValue);
+    return doc.createTextNode(node.nodeValue);
   } else if (node.nodeType === 1) { // Element node
     // Remove nodes that are unlikely candidates
     var unlikelyMatchString = node.className + node.id;
@@ -120,10 +129,10 @@ function cleanNode(node) {
     if (/script|style|meta/i.test(tagName)) return null;
 
     // Empty node
-    if (!node.innerText || node.innerText.trim() === '') return null;
+    //if (getInnerText(node) === '') return null;
 
     // Create a new node
-    var el = document.createElement(tagName);
+    var el = doc.createElement(tagName);
 
     // Assign a content score to the node
     if (/MAIN|ARTICLE|SECTION|P|TD|PRE|DIV/.test(tagName)) {
@@ -133,7 +142,7 @@ function cleanNode(node) {
       el.contentScore *= 1 - getLinkDensity(node);
 
       // Add points for any commas within this paragraph
-      var innerText = node.innerText.trim();
+      var innerText = getInnerText(node);
       el.contentScore += innerText.split(',').length;
 
       // For every 100 characters in this paragraph, add another point. Up to 3 points.
@@ -164,7 +173,7 @@ function cleanNode(node) {
     }
 
     for (var i=0, l=node.childNodes.length; i<l; i++) {
-      var childEl = cleanNode(node.childNodes[i]);
+      var childEl = cleanNode(node.childNodes[i], doc);
       if (childEl) el.appendChild(childEl);
     }
 
@@ -177,7 +186,7 @@ function cleanNode(node) {
 function getContent(doc) {
   var articleContent = doc.createElement('div');
   if (!topCandidate) return articleContent;
-  
+
   var siblingScoreThreshold = topCandidate.contentScore * 0.2;
   var siblingNodes = topCandidate.parentNode.childNodes;
   for (var i=0, l=siblingNodes.length; i<l; i++) {
@@ -199,7 +208,7 @@ function getContent(doc) {
 
     if (sibling.nodeName === 'P') {
       var linkDensity = getLinkDensity(sibling);
-      var nodeContent = sibling.innerText.trim();
+      var nodeContent = getInnerText(sibling);
       var nodeLength = nodeContent.length;
 
       if (nodeLength > 80 && linkDensity < 0.25) {
