@@ -117,7 +117,7 @@ function cleanNode(node) {
     if (regexps.unlikelyCandidates.test(unlikelyMatchString) && !regexps.okMaybeItsACandidate.test(unlikelyMatchString)) return null;
 
     var tagName = node.tagName;
-    if (/script/i.test(tagName)) return null;
+    if (/script|style|meta/i.test(tagName)) return null;
 
     // Empty node
     if (node.innerText.trim() === '') return null;
