@@ -101,10 +101,10 @@ function getLinkDensity(node) {
 
 var topCandidate;
 
-function declutter(node) {
+function declutter(node, doc) {
   topCandidate = null;
   cleanNode(node);
-  return getContent(topCandidate);
+  return getContent(doc);
 }
 
 // Clean up a node recursively
@@ -120,7 +120,7 @@ function cleanNode(node) {
     if (/script|style|meta/i.test(tagName)) return null;
 
     // Empty node
-    if (node.innerText.trim() === '') return null;
+    if (!node.innerText || node.innerText.trim() === '') return null;
 
     // Create a new node
     var el = document.createElement(tagName);
@@ -174,8 +174,10 @@ function cleanNode(node) {
 }
 
 // Get content from the top candidate and its siblings.
-function getContent() {
-  var articleContent = document.createElement('div');
+function getContent(doc) {
+  var articleContent = doc.createElement('div');
+  if (!topCandidate) return articleContent;
+  
   var siblingScoreThreshold = topCandidate.contentScore * 0.2;
   var siblingNodes = topCandidate.parentNode.childNodes;
   for (var i=0, l=siblingNodes.length; i<l; i++) {

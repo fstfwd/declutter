@@ -23,7 +23,7 @@ describe("Test pages", function() {
       var result;
       before(function() {
         var doc = jsdom(testPage.source);
-        result = declutter(doc.documentElement).innerHTML;
+        result = declutter(doc.documentElement, doc).innerHTML;
       });
 
       it("should extract expected content", function() {
