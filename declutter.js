@@ -29,6 +29,13 @@ var regexps = {
 function contentScoreForTagName(tagName) {
   var contentScore = 0;
   switch (tagName) {
+    case 'MAIN':
+    case 'ARTICLE':
+      contentScore += 10;
+      break;
+    case 'SECTION':
+      contentScore += 8;
+      break;
     case 'P':
     case 'DIV':
       contentScore += 5;
@@ -109,12 +116,15 @@ function cleanNode(node) {
     var unlikelyMatchString = node.className + node.id;
     if (regexps.unlikelyCandidates.test(unlikelyMatchString) && !regexps.okMaybeItsACandidate.test(unlikelyMatchString)) return null;
 
+    var tagName = node.tagName;
+    if (/script/i.test(tagName)) return null;
+
     // Create a new node
-    var el = document.createElement(node.tagName);
+    var el = document.createElement(tagName);
 
     // Assign a content score to the node
-    if (/P|TD|PRE|DIV/.test(node.tagName)) {
-      el.contentScore = contentScoreForTagName(node.tagName);
+    if (/MAIN|ARTICLE|SECTION|P|TD|PRE|DIV/.test(tagName)) {
+      el.contentScore = contentScoreForTagName(tagName);
       el.contentScore += contentScoreForClassName(node.className);
       el.contentScore += contentScoreForId(node.id);
       el.contentScore *= 1 - getLinkDensity(node);
