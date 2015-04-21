@@ -119,6 +119,9 @@ function cleanNode(node) {
     var tagName = node.tagName;
     if (/script/i.test(tagName)) return null;
 
+    // Empty node
+    if (node.innerText.trim() === '') return null;
+
     // Create a new node
     var el = document.createElement(tagName);
 
