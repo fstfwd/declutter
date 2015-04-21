@@ -95,49 +95,9 @@ function getLinkDensity(node) {
 var topCandidate;
 
 function declutter(node) {
-  // Find the top candidate
   topCandidate = null;
   cleanNode(node);
-
-  // Get content from the top candidate and its siblings.
-  var articleContent = document.createElement('div');
-
-  var siblingScoreThreshold = topCandidate.contentScore * 0.2;
-  var siblingNodes = topCandidate.parentNode.childNodes;
-  for (var i=0, l=siblingNodes.length; i<l; i++) {
-    var sibling = siblingNodes[i];
-    var append = false;
-
-    if (sibling === topCandidate) append = true;
-
-    // Give a bonus if the sibling and top candidate have the same classname
-    var contentBonus = 0;
-    if (topCandidate.className !== '' && sibling.className === topCandidate.className()) {
-      contentBonus += siblingScoreThreshold;
-    }
-
-    if (sibling.contentScore + contentBonus >= siblingScoreThreshold) {
-      append = true; 
-    }
-
-    if (sibling.nodeName === 'P') {
-      var linkDensity = getLinkDensity(sibling);
-      var nodeContent = sibling.innerText.trim();
-      var nodeLength = nodeContent.length;
-
-      if (nodeLength > 80 && linkDensity < 0.25) {
-        append = true;
-      } else if (nodeLength < 80 && linkDensity === 0 && /\.( |$)/.test(nodeContent)) {
-        append = true;
-      }
-    }
-
-    if (append) {
-      articleContent.appendChild(sibling);
-    }
-  }
-
-  return el;
+  return getContent(topCandidate);
 }
 
 // Clean up a node recursively
@@ -198,6 +158,46 @@ function cleanNode(node) {
     return el;
   }
   return null;
+}
+
+// Get content from the top candidate and its siblings.
+function getContent() {
+  var articleContent = document.createElement('div');
+  var siblingScoreThreshold = topCandidate.contentScore * 0.2;
+  var siblingNodes = topCandidate.parentNode.childNodes;
+  for (var i=0, l=siblingNodes.length; i<l; i++) {
+    var sibling = siblingNodes[i];
+    var append = false;
+
+    if (sibling === topCandidate) append = true;
+
+    // Give a bonus if the sibling and top candidate have the same classname
+    var contentBonus = 0;
+    if (topCandidate.className !== '' && sibling.className === topCandidate.className()) {
+      contentBonus += siblingScoreThreshold;
+    }
+
+    if (sibling.contentScore + contentBonus >= siblingScoreThreshold) {
+      append = true; 
+    }
+
+    if (sibling.nodeName === 'P') {
+      var linkDensity = getLinkDensity(sibling);
+      var nodeContent = sibling.innerText.trim();
+      var nodeLength = nodeContent.length;
+
+      if (nodeLength > 80 && linkDensity < 0.25) {
+        append = true;
+      } else if (nodeLength < 80 && linkDensity === 0 && /\.( |$)/.test(nodeContent)) {
+        append = true;
+      }
+    }
+
+    if (append) {
+      articleContent.appendChild(sibling);
+    }
+  }
+  return articleContent;
 }
 
 
