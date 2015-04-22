@@ -105,6 +105,45 @@ function getLinkDensity(node) {
 
 
 /**
+ * A Lightweight Node Object
+ */
+
+function Node(el, type, className) {
+  this.el = el;
+  this.type = type;
+  this.className = className;
+  this.childNodes = [];
+  this.parentNode = null;
+}
+
+Node.prototype.appendChild = function(child) {
+  this.childNodes.push(child);
+  child.parentNode = this;
+}
+
+Node.prototype.cloneNode = function(doc) {
+  var cloneNode = function(node, doc) {
+    var el;
+    switch (node.type) {
+      case 'text':
+        el = doc.createTextNode(node.el.nodeValue);
+        break;
+      case 'element':
+        el = doc.createElement(node.el.tagName);
+    }
+
+    for (var i=0, l=node.childNodes.length; i<l; i++) {
+      var childEl = cloneNode(node.childNodes[i], doc);
+      if (childEl) el.appendChild(childEl);
+    }
+    
+    return el;
+  }
+  return cloneNode(this, doc);
+}
+
+
+/**
  * Declutter
  */
 
@@ -112,14 +151,14 @@ var topCandidate;
 
 function declutter(node, doc) {
   topCandidate = null;
-  cleanNode(node, doc);
+  cleanNode(node);
   return getContent(doc);
 }
 
 // Clean up a node recursively
-function cleanNode(node, doc) {
+function cleanNode(node) {
   if (node.nodeType === 3) { // Text node
-    return doc.createTextNode(node.nodeValue);
+    return new Node(node, 'text', '');
   } else if (node.nodeType === 1) { // Element node
     // Remove nodes that are unlikely candidates
     var unlikelyMatchString = node.className + node.id;
@@ -132,7 +171,7 @@ function cleanNode(node, doc) {
     //if (getInnerText(node) === '') return null;
 
     // Create a new node
-    var el = doc.createElement(tagName);
+    var el = new Node(node, 'element', node.className);
 
     // Assign a content score to the node
     if (/MAIN|ARTICLE|SECTION|P|TD|PRE|DIV/.test(tagName)) {
@@ -172,8 +211,9 @@ function cleanNode(node, doc) {
       el.contentScore = 0;
     }
 
-    for (var i=0, l=node.childNodes.length; i<l; i++) {
-      var childEl = cleanNode(node.childNodes[i], doc);
+    var childNodes = node.childNodes;
+    for (var i=0, l=childNodes.length; i<l; i++) {
+      var childEl = cleanNode(childNodes[i]);
       if (childEl) el.appendChild(childEl);
     }
 
@@ -198,7 +238,7 @@ function getContent(doc) {
 
     // Give a bonus if the sibling and top candidate have the same classname
     var contentBonus = 0;
-    if (topCandidate.className !== '' && sibling.className === topCandidate.className()) {
+    if (topCandidate.className !== '' && sibling.className === topCandidate.className) {
       contentBonus += siblingScoreThreshold;
     }
 
@@ -219,7 +259,7 @@ function getContent(doc) {
     }
 
     if (append) {
-      articleContent.appendChild(sibling);
+      articleContent.appendChild(sibling.cloneNode(doc));
     }
   }
   return articleContent;
