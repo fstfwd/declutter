@@ -108,10 +108,9 @@ function getLinkDensity(node) {
  * A Lightweight Node Object
  */
 
-function Node(el, type, className) {
+function Node(el, type) {
   this.el = el;
   this.type = type;
-  this.className = className;
   this.childNodes = [];
   this.parentNode = null;
 }
@@ -158,7 +157,7 @@ function declutter(node, doc) {
 // Clean up a node recursively
 function cleanNode(node) {
   if (node.nodeType === 3) { // Text node
-    return new Node(node, 'text', '');
+    return new Node(node, 'text');
   } else if (node.nodeType === 1) { // Element node
     // Remove nodes that are unlikely candidates
     var unlikelyMatchString = node.className + node.id;
@@ -171,7 +170,7 @@ function cleanNode(node) {
     //if (getInnerText(node) === '') return null;
 
     // Create a new node
-    var el = new Node(node, 'element', node.className);
+    var el = new Node(node, 'element');
 
     // Assign a content score to the node
     if (/MAIN|ARTICLE|SECTION|P|TD|PRE|DIV/.test(tagName)) {
@@ -238,7 +237,7 @@ function getContent(doc) {
 
     // Give a bonus if the sibling and top candidate have the same classname
     var contentBonus = 0;
-    if (topCandidate.className !== '' && sibling.className === topCandidate.className) {
+    if (topCandidate.el.className !== '' && sibling.el.className === topCandidate.el.className) {
       contentBonus += siblingScoreThreshold;
     }
 
