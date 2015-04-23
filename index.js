@@ -35,24 +35,24 @@ testPages = testPages.filter(function(testPage) {
   return referenceTestPages.indexOf(testPage.dir) !== -1;
 });
 
-var testPage = testPages[0];
+var testPage = testPages[1];
 var doc;
 var result;
 
-// declutter
-doc = jsdom(testPage.source);
-result = declutter(doc.documentElement, doc).innerHTML;
-fs.writeFileSync('html/declutter.html', result);
+// // declutter
+// doc = jsdom(testPage.source);
+// result = declutter(doc.documentElement, doc).innerHTML;
+// fs.writeFileSync('1.html', result);
 
 // arc90
 doc = jsdom(testPage.source);
 result = Arc90Readability.init(doc.defaultView, doc);
-fs.writeFileSync('html/arc90.html', result);
+fs.writeFileSync('1.html', result);
 
 // // node-readability
 // doc = jsdom(testPage.source);
 // result = new NodeReadability(doc.defaultView, {}).content;
-// fs.writeFileSync('html/node-readability.html', result);
+// fs.writeFileSync('1.html', result);
 
 // // Mozilla
 // var uri = {
@@ -64,4 +64,4 @@ fs.writeFileSync('html/arc90.html', result);
 // };
 // doc = jsdom(testPage.source);
 // result = new MozillaReadability(uri, doc).parse();
-// fs.writeFileSync('html/mozilla-readability.html', result.content);
+// fs.writeFileSync('1.html', result.content);
