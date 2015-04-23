@@ -1,7 +1,8 @@
 var path = require("path");
 var fs = require("fs");
-var declutter = require("../declutter");
 var jsdom = require("jsdom").jsdom;
+var declutter = require("../declutter");
+var NodeReadability = require('./node-readability/readability');
 
 // Load test pages
 var testPageRoot = path.join(__dirname, "../test/data");
@@ -17,15 +18,15 @@ var testPages = fs.readdirSync(testPageRoot).map(function(dir) {
 var referenceTestPages = [
   "002",
   "herald-sun-1",
-  "lifehacker-working",
-  "lifehacker-post-comment-load",
-  "medium-1",
-  "medium-2",
-  "salon-1",
-  "tmz-1",
-  "wapo-1",
-  "wapo-2",
-  "webmd-1",
+  // "lifehacker-working",
+  // "lifehacker-post-comment-load",
+  // "medium-1",
+  // "medium-2",
+  // "salon-1",
+  // "tmz-1",
+  // "wapo-1",
+  // "wapo-2",
+  // "webmd-1",
 ];
 
 testPages = testPages.filter(function(testPage) {
@@ -37,8 +38,42 @@ suite("declutter test page perf", function () {
   set("type", "static");
   testPages.forEach(function(testPage) {
     var doc = jsdom(testPage.source);
-    bench(testPage.dir + " declutter perf", function() {
+    bench(testPage.dir + " perf", function() {
       declutter(doc.documentElement, doc).innerHTML;
     });
   });
 });
+
+// suite("Arc90 test page perf", function () {
+//   set("iterations", 1);
+//   set("type", "static");
+//   testPages.forEach(function(testPage) {
+//     var doc = jsdom(testPage.source);
+//     bench(testPage.dir + " declutter perf", function() {
+//       declutter(doc.documentElement, doc).innerHTML;
+//     });
+//   });
+// });
+
+suite("node-readability test page perf", function () {
+  set("iterations", 1);
+  set("type", "static");
+  testPages.forEach(function(testPage) {
+    var doc = jsdom(testPage.source);
+    bench(testPage.dir + " perf", function() {
+      readability = new NodeReadability(doc.defaultView, {});
+      readability.content;
+    });
+  });
+});
+
+// suite("Mozilla test page perf", function () {
+//   set("iterations", 1);
+//   set("type", "static");
+//   testPages.forEach(function(testPage) {
+//     var doc = jsdom(testPage.source);
+//     bench(testPage.dir + " declutter perf", function() {
+//       declutter(doc.documentElement, doc).innerHTML;
+//     });
+//   });
+// });
