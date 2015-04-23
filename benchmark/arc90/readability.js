@@ -50,40 +50,21 @@ var readability = {
      *
      * @return void
      **/
-    init: function() {
-        /* Before we do anything, remove all scripts that are not readability. */
-        window.onload = window.onunload = function() {};
-
+    init: function(window, document) {
         readability.removeScripts(document);
 
         if(document.body && !readability.bodyCache) {
             readability.bodyCache = document.body.innerHTML;
         }
 
-        readability.prepDocument();
+        readability.prepDocument(document);
 
-        /* Build readability's DOM tree */
-        var overlay        = document.createElement("DIV");
-        var innerDiv       = document.createElement("DIV");
-        var articleTitle   = readability.getArticleTitle();
-        var articleContent = readability.grabArticle();
-
-        overlay.id              = "readOverlay";
-        innerDiv.id             = "readInner";
-
-        /* Glue the structure of our document together. */
-        innerDiv.appendChild( articleTitle   );
-        innerDiv.appendChild( articleContent );
-        overlay.appendChild( innerDiv       );
-
-        /* Clear the old HTML, insert the new content. */
-        document.body.innerHTML = "";
-        document.body.insertBefore(overlay, document.body.firstChild);
-        document.body.removeAttribute('style');
+        var articleTitle   = readability.getArticleTitle(document);
+        var articleContent = readability.grabArticle(document);
 
         readability.postProcessContent(articleContent);
 
-        window.scrollTo(0, 0);
+        return articleContent.innerHTML;
     },
 
     /**
@@ -122,7 +103,7 @@ var readability = {
      *
      * @return void
      **/
-    getArticleTitle: function () {
+    getArticleTitle: function (document) {
         var curTitle = "",
             origTitle = "";
 
@@ -178,9 +159,7 @@ var readability = {
      * 
      * @return void
      **/
-    prepDocument: function () {
-        document.body.id = "readabilityBody";
-
+    prepDocument: function (document) {
         var frames = document.getElementsByTagName('frame');
         if(frames.length > 0)
         {
@@ -196,7 +175,7 @@ var readability = {
                     canAccessFrame = true;
                 }
                 catch(eFrames) {
-                    dbg(eFrames);
+                    console.log(eFrames);
                 }
 
                 if(frameSize > biggestFrameSize) {
@@ -221,13 +200,6 @@ var readability = {
                 var frameset = document.getElementsByTagName('frameset')[0];
                 if(frameset) {
                     frameset.parentNode.removeChild(frameset); }
-            }
-        }
-
-        /* Remove all stylesheets */
-        for (var k=0;k < document.styleSheets.length; k+=1) {
-            if (document.styleSheets[k].href !== null && document.styleSheets[k].href.lastIndexOf("readability") === -1) {
-                document.styleSheets[k].disabled = true;
             }
         }
 
@@ -290,7 +262,7 @@ var readability = {
             articleContent.innerHTML = articleContent.innerHTML.replace(/<br[^>]*>\s*<p/gi, '<p');      
         }
         catch (e) {
-            dbg("Cleaning innerHTML of breaks failed. This is an IE strict-block-elements bug. Ignoring.: " + e);
+            console.log("Cleaning innerHTML of breaks failed. This is an IE strict-block-elements bug. Ignoring.: " + e);
         }
     },
     
@@ -347,11 +319,11 @@ var readability = {
      * @param page a document to run upon. Needs to be a full document, complete with body.
      * @return Element
     **/
-    grabArticle: function (page) {
+    grabArticle: function (document) {
         var stripUnlikelyCandidates = readability.flagIsActive(readability.FLAG_STRIP_UNLIKELYS),
-            isPaging = (page !== null) ? true: false;
+            isPaging = false;
 
-        page = page ? page : document.body;
+        page = document.body;
 
         var pageCacheHtml = page.innerHTML;
 
@@ -378,9 +350,11 @@ var readability = {
                     )
                 )
                 {
-                    dbg("Removing unlikely candidate - " + unlikelyMatchString);
-                    node.parentNode.removeChild(node);
-                    nodeIndex-=1;
+                    console.log("Removing unlikely candidate - " + unlikelyMatchString);
+                    if (node.parentNode) {
+                        node.parentNode.removeChild(node);
+                        nodeIndex-=1;
+                    }
                     continue;
                 }               
             }
@@ -401,7 +375,7 @@ var readability = {
                         nodesToScore[nodesToScore.length] = node;
                     }
                     catch(e) {
-                        dbg("Could not alter div to p, probably an IE restriction, reverting back to div.: " + e);
+                        console.log("Could not alter div to p, probably an IE restriction, reverting back to div.: " + e);
                     }
                 }
                 else
@@ -485,7 +459,7 @@ var readability = {
             **/
             candidates[c].readability.contentScore = candidates[c].readability.contentScore * (1-readability.getLinkDensity(candidates[c]));
 
-            dbg('Candidate: ' + candidates[c] + " (" + candidates[c].className + ":" + candidates[c].id + ") with score " + candidates[c].readability.contentScore);
+            console.log('Candidate: ' + candidates[c] + " (" + candidates[c].className + ":" + candidates[c].id + ") with score " + candidates[c].readability.contentScore);
 
             if(!topCandidate || candidates[c].readability.contentScore > topCandidate.readability.contentScore) {
                 topCandidate = candidates[c]; }
@@ -528,8 +502,8 @@ var readability = {
                 continue;
             }
 
-            dbg("Looking at sibling node: " + siblingNode + " (" + siblingNode.className + ":" + siblingNode.id + ")" + ((typeof siblingNode.readability !== 'undefined') ? (" with score " + siblingNode.readability.contentScore) : ''));
-            dbg("Sibling has score " + (siblingNode.readability ? siblingNode.readability.contentScore : 'Unknown'));
+            console.log("Looking at sibling node: " + siblingNode + " (" + siblingNode.className + ":" + siblingNode.id + ")" + ((typeof siblingNode.readability !== 'undefined') ? (" with score " + siblingNode.readability.contentScore) : ''));
+            console.log("Sibling has score " + (siblingNode.readability ? siblingNode.readability.contentScore : 'Unknown'));
 
             if(siblingNode === topCandidate)
             {
@@ -563,20 +537,20 @@ var readability = {
             }
 
             if(append) {
-                dbg("Appending node: " + siblingNode);
+                console.log("Appending node: " + siblingNode);
 
                 var nodeToAppend = null;
                 if(siblingNode.nodeName !== "DIV" && siblingNode.nodeName !== "P") {
                     /* We have a node that isn't a common block level element, like a form or td tag. Turn it into a div so it doesn't get filtered out later by accident. */
                     
-                    dbg("Altering siblingNode of " + siblingNode.nodeName + ' to div.');
+                    console.log("Altering siblingNode of " + siblingNode.nodeName + ' to div.');
                     nodeToAppend = document.createElement("DIV");
                     try {
                         nodeToAppend.id = siblingNode.id;
                         nodeToAppend.innerHTML = siblingNode.innerHTML;
                     }
                     catch(er) {
-                        dbg("Could not alter siblingNode to div, probably an IE restriction, reverting back to original.");
+                        console.log("Could not alter siblingNode to div, probably an IE restriction, reverting back to original.");
                         nodeToAppend = siblingNode;
                         s-=1;
                         sl-=1;
@@ -664,10 +638,7 @@ var readability = {
 
         normalizeSpaces = (typeof normalizeSpaces === 'undefined') ? true : normalizeSpaces;
 
-        if (navigator.appName === "Microsoft Internet Explorer") {
-            textContent = e.innerText.replace( readability.regexps.trim, "" ); }
-        else {
-            textContent = e.textContent.replace( readability.regexps.trim, "" ); }
+        textContent = e.textContent.replace( readability.regexps.trim, "" );
 
         if(normalizeSpaces) {
             return textContent.replace( readability.regexps.normalize, " "); }
@@ -789,7 +760,7 @@ var readability = {
             e.innerHTML = e.innerHTML.replace(readability.regexps.killBreaks,'<br />');       
         }
         catch (eBreaks) {
-            dbg("KillBreaks failed - this is an IE bug. Ignoring.: " + eBreaks);
+            console.log("KillBreaks failed - this is an IE bug. Ignoring.: " + eBreaks);
         }
     },
 
@@ -854,7 +825,7 @@ var readability = {
             var weight = readability.getClassWeight(tagsList[i]);
             var contentScore = (typeof tagsList[i].readability !== 'undefined') ? tagsList[i].readability.contentScore : 0;
             
-            dbg("Cleaning Conditionally " + tagsList[i] + " (" + tagsList[i].className + ":" + tagsList[i].id + ")" + ((typeof tagsList[i].readability !== 'undefined') ? (" with score " + tagsList[i].readability.contentScore) : ''));
+            console.log("Cleaning Conditionally " + tagsList[i] + " (" + tagsList[i].className + ":" + tagsList[i].id + ")" + ((typeof tagsList[i].readability !== 'undefined') ? (" with score " + tagsList[i].readability.contentScore) : ''));
 
             if(weight+contentScore < 0)
             {
@@ -948,4 +919,4 @@ var readability = {
     
 };
 
-readability.init();
+module.exports = readability;
