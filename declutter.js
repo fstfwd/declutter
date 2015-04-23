@@ -26,69 +26,71 @@ var regexps = {
   videos: /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
 };
 
-function initializeNode(node) {
-  node.readability = {"contentScore": 0};         
-
-  switch(node.tagName) {
-      case 'DIV':
-          node.readability.contentScore += 5;
-          break;
-
-      case 'PRE':
-      case 'TD':
-      case 'BLOCKQUOTE':
-          node.readability.contentScore += 3;
-          break;
-          
-      case 'ADDRESS':
-      case 'OL':
-      case 'UL':
-      case 'DL':
-      case 'DD':
-      case 'DT':
-      case 'LI':
-      case 'FORM':
-          node.readability.contentScore -= 3;
-          break;
-
-      case 'H1':
-      case 'H2':
-      case 'H3':
-      case 'H4':
-      case 'H5':
-      case 'H6':
-      case 'TH':
-          node.readability.contentScore -= 5;
-          break;
+function contentScoreForTagName(tagName) {
+  var contentScore = 0;
+  switch (tagName) {
+    case 'MAIN':
+    case 'ARTICLE':
+      contentScore += 10;
+      break;
+    case 'SECTION':
+      contentScore += 8;
+      break;
+    case 'P':
+    case 'DIV':
+      contentScore += 5;
+      break;
+    case 'PRE':
+    case 'TD':
+    case 'BLOCKQUOTE':
+      contentScore += 3;
+      break;
+    case 'ADDRESS':
+    case 'OL':
+    case 'UL':
+    case 'DL':
+    case 'DD':
+    case 'DT':
+    case 'LI':
+    case 'FORM':
+      contentScore -= 3;
+      break;
+    case 'H1':
+    case 'H2':
+    case 'H3':
+    case 'H4':
+    case 'H5':
+    case 'H6':
+    case 'TH':
+      contentScore -= 5;
+      break;
   }
- 
-  node.readability.contentScore += getClassWeight(node);
+  return contentScore;
 }
 
-function getClassWeight(e) {
-  var weight = 0;
-
-  /* Look for a special classname */
-  if (typeof(e.className) === 'string' && e.className !== '')
-  {
-      if(e.className.search(regexps.negative) !== -1) {
-          weight -= 25; }
-
-      if(e.className.search(regexps.positive) !== -1) {
-          weight += 25; }
+function contentScoreForClassName(className) {
+  var contentScore = 0;
+  if (typeof(className) === 'string' && className !== '') {
+    if (regexps.negative.test(className)) contentScore -= 25;
+    if (regexps.positive.test(className)) contentScore += 25;
   }
+  return contentScore;
+}
 
-  /* Look for a special ID */
-  if (typeof(e.id) === 'string' && e.id !== '')
-  {
-      if(e.id.search(regexps.negative) !== -1) {
-          weight -= 25; }
-
-      if(e.id.search(regexps.positive) !== -1) {
-          weight += 25; }
+function contentScoreForId(id) {
+  var contentScore = 0;
+  if (typeof(id) === 'string' && id !== '') {
+    if (regexps.negative.test(id)) contentScore -= 25;
+    if (regexps.positive.test(id)) contentScore += 25;
   }
+  return contentScore;
+}
 
-  return weight;
+function initializeNode(node) {
+  node.readability = {"contentScore": 0};
+  node.readability.contentScore += contentScoreForTagName(node.tagName);
+  node.readability.contentScore += contentScoreForClassName(node.className);
+  node.readability.contentScore += contentScoreForId(node.id);
 }
 
 function getInnerText(node) {
