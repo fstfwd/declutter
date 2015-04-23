@@ -2,6 +2,7 @@ var path = require("path");
 var fs = require("fs");
 var jsdom = require("jsdom").jsdom;
 var declutter = require("../declutter");
+var Arc90Readability = require('./arc90/readability');
 var NodeReadability = require('./node-readability/readability');
 var MozillaReadability = require("./mozilla/Readability.js");
 
@@ -45,16 +46,16 @@ suite("declutter test page perf", function () {
   });
 });
 
-// suite("Arc90 test page perf", function () {
-//   set("iterations", 1);
-//   set("type", "static");
-//   testPages.forEach(function(testPage) {
-//     var doc = jsdom(testPage.source);
-//     bench(testPage.dir + " declutter perf", function() {
-//       declutter(doc.documentElement, doc).innerHTML;
-//     });
-//   });
-// });
+suite("Arc90 test page perf", function () {
+  set("iterations", 1);
+  set("type", "static");
+  testPages.forEach(function(testPage) {
+    var doc = jsdom(testPage.source);
+    bench(testPage.dir + " declutter perf", function() {
+      declutter(doc.documentElement, doc).innerHTML;
+    });
+  });
+});
 
 suite("node-readability test page perf", function () {
   set("iterations", 1);
