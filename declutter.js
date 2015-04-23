@@ -94,7 +94,7 @@ function initializeNode(node) {
 }
 
 function getInnerText(node) {
-  return node.textContent.replace(regexps.trim, '').replace(regexps.normalize, ' ');
+  return node.textContent;
 }
 
 function getLinkDensity(node) {
