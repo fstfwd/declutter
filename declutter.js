@@ -6,6 +6,7 @@
 
 ;(function() {
 
+
 /**
  * Helpers
  */
@@ -26,121 +27,97 @@ var regexps = {
   videos: /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
 };
 
-function contentScoreForTagName(tagName) {
-  var contentScore = 0;
-  switch (tagName) {
-    case 'MAIN':
-    case 'ARTICLE':
-      contentScore += 10;
-      break;
-    case 'SECTION':
-      contentScore += 8;
-      break;
-    case 'P':
-    case 'DIV':
-      contentScore += 5;
-      break;
-    case 'PRE':
-    case 'TD':
-    case 'BLOCKQUOTE':
-      contentScore += 3;
-      break;
-    case 'ADDRESS':
-    case 'OL':
-    case 'UL':
-    case 'DL':
-    case 'DD':
-    case 'DT':
-    case 'LI':
-    case 'FORM':
-      contentScore -= 3;
-      break;
-    case 'H1':
-    case 'H2':
-    case 'H3':
-    case 'H4':
-    case 'H5':
-    case 'H6':
-    case 'TH':
-      contentScore -= 5;
-      break;
+function initializeNode(node) {
+  node.readability = {"contentScore": 0};         
+
+  switch(node.tagName) {
+      case 'DIV':
+          node.readability.contentScore += 5;
+          break;
+
+      case 'PRE':
+      case 'TD':
+      case 'BLOCKQUOTE':
+          node.readability.contentScore += 3;
+          break;
+          
+      case 'ADDRESS':
+      case 'OL':
+      case 'UL':
+      case 'DL':
+      case 'DD':
+      case 'DT':
+      case 'LI':
+      case 'FORM':
+          node.readability.contentScore -= 3;
+          break;
+
+      case 'H1':
+      case 'H2':
+      case 'H3':
+      case 'H4':
+      case 'H5':
+      case 'H6':
+      case 'TH':
+          node.readability.contentScore -= 5;
+          break;
   }
-  return contentScore;
+ 
+  node.readability.contentScore += getClassWeight(node);
 }
 
-function contentScoreForClassName(className) {
-  if (className === '') return 0;
-  var contentScore = 0;
-  if (regexps.negative.test(className)) contentScore -= 25;
-  if (regexps.positive.test(className)) contentScore += 25;
-  return contentScore;
-}
+function getClassWeight(e) {
+  var weight = 0;
 
-function contentScoreForId(id) {
-  if (id === '') return 0;
-  var contentScore = 0;
-  if (regexps.negative.test(id)) contentScore -= 25;
-  if (regexps.positive.test(id)) contentScore += 25;
-  return contentScore;
-}
+  /* Look for a special classname */
+  if (typeof(e.className) === 'string' && e.className !== '')
+  {
+      if(e.className.search(regexps.negative) !== -1) {
+          weight -= 25; }
 
-function getInnerText(node) {
-  var innerText = node.innerText;
-  if (innerText) {
-    return innerText.trim();
-  } else {
-    return '';
+      if(e.className.search(regexps.positive) !== -1) {
+          weight += 25; }
   }
+
+  /* Look for a special ID */
+  if (typeof(e.id) === 'string' && e.id !== '')
+  {
+      if(e.id.search(regexps.negative) !== -1) {
+          weight -= 25; }
+
+      if(e.id.search(regexps.positive) !== -1) {
+          weight += 25; }
+  }
+
+  return weight;
 }
 
-function getLinkDensity(node) {
-  var links = node.getElementsByTagName('a');
-  var textLength = getInnerText(node).length;
+function getInnerText(e, normalizeSpaces) {
+  var textContent    = "";
+
+  if(typeof(e.textContent) === "undefined" && typeof(e.innerText) === "undefined") {
+      return "";
+  }
+
+  normalizeSpaces = (typeof normalizeSpaces === 'undefined') ? true : normalizeSpaces;
+
+  textContent = e.textContent.replace(regexps.trim, "" );
+
+  if(normalizeSpaces) {
+      return textContent.replace(regexps.normalize, " "); }
+  else {
+      return textContent; }
+}
+
+function getLinkDensity(e) {
+  var links      = e.getElementsByTagName("a");
+  var textLength = getInnerText(e).length;
   var linkLength = 0;
-  for (var i=0, l=links.length; i<l; i++) {
-    linkLength += getInnerText(links[i]).length;
+  for(var i=0, il=links.length; i<il;i+=1)
+  {
+      linkLength += getInnerText(links[i]).length;
   }
   return linkLength / textLength;
-}
-
-
-/**
- * A Lightweight Node Object
- */
-
-function Node(el, type) {
-  this.el = el;
-  this.type = type;
-  this.childNodes = [];
-  this.parentNode = null;
-}
-
-Node.prototype.appendChild = function(child) {
-  this.childNodes.push(child);
-  child.parentNode = this;
-}
-
-Node.prototype.cloneNode = function(doc) {
-  var cloneNode = function(node, doc) {
-    if (node.type === 'text') {
-      return doc.createTextNode(node.el.nodeValue);
-    } else if (node.type === 'element') {
-      var len = node.childNodes.length;
-      if (len === 0) {
-        // Remove empty nodes
-        return null;
-      } else {
-        var el = doc.createElement(node.el.tagName);
-        for (var i=0, l=node.childNodes.length; i<l; i++) {
-          var childEl = cloneNode(node.childNodes[i], doc);
-          if (childEl) el.appendChild(childEl);
-        }
-        return el;
-      }
-    }
-    return null;
-  }
-  return cloneNode(this, doc);
 }
 
 
@@ -148,121 +125,243 @@ Node.prototype.cloneNode = function(doc) {
  * Declutter
  */
 
-var topCandidate;
+function declutter(page, doc) {
+  var allElements = page.getElementsByTagName('*');
 
-function declutter(node, doc) {
-  topCandidate = null;
-  cleanNode(node);
-  return getContent(doc);
-}
+  /**
+   * First, node prepping. Trash nodes that look cruddy (like ones with the class name "comment", etc), and turn divs
+   * into P tags where they have been used inappropriately (as in, where they contain no other block level elements.)
+   *
+   * Note: Assignment from index for performance. See http://www.peachpit.com/articles/article.aspx?p=31567&seqNum=5
+   * TODO: Shouldn't this be a reverse traversal?
+  **/
+  var node = null;
+  var nodesToScore = [];
+  for (var nodeIndex = 0; (node = allElements[nodeIndex]); nodeIndex+=1) {
+      /* Remove unlikely candidates */
+      var unlikelyMatchString = node.className + node.id;
+      if (unlikelyMatchString.search(regexps.unlikelyCandidates) !== -1 && unlikelyMatchString.search(regexps.okMaybeItsACandidate) === -1 && node.tagName !== "BODY")
+      {
+          console.log("Removing unlikely candidate - " + unlikelyMatchString);
+          if (node.parentNode) {
+            node.parentNode.removeChild(node);
+            nodeIndex-=1;
+          }
+          continue;
+      }               
 
-// Clean up a node recursively
-function cleanNode(node) {
-  if (node.nodeType === 3) { // Text node
-    return new Node(node, 'text');
-  } else if (node.nodeType === 1) { // Element node
-    // Remove nodes that are unlikely candidates
-    var unlikelyMatchString = node.className + ' ' + node.id;
-    if (regexps.unlikelyCandidates.test(unlikelyMatchString) && !regexps.okMaybeItsACandidate.test(unlikelyMatchString)) return null;
-
-    var tagName = node.tagName;
-    if (/script|style|meta/i.test(tagName)) return null;
-
-    // Empty node
-    //if (getInnerText(node) === '') return null;
-
-    // Create a new node
-    var el = new Node(node, 'element');
-
-    // Assign a content score to the node
-    if (/MAIN|ARTICLE|SECTION|P|TD|PRE|DIV/.test(tagName)) {
-      el.contentScore = contentScoreForTagName(tagName);
-      el.contentScore += contentScoreForClassName(node.className);
-      el.contentScore += contentScoreForId(node.id);
-      el.contentScore *= 1 - getLinkDensity(node);
-
-      // Add points for any commas within this paragraph
-      var innerText = getInnerText(node);
-      el.contentScore += innerText.split(',').length;
-
-      // For every 100 characters in this paragraph, add another point. Up to 3 points.
-      el.contentScore += Math.min(Math.floor(innerText.length / 100), 3);
-      if (!topCandidate || el.contentScore > topCandidate.contentScore) {
-        topCandidate = el;
+      if (node.tagName === "P" || node.tagName === "TD" || node.tagName === "PRE") {
+          nodesToScore[nodesToScore.length] = node;
       }
 
-      // Add the score to the parent.
-      var parent = el.parentNode;
-      if (parent) {
-        parent.contentScore += el.contentScore;
-        if (!topCandidate || parent.contentScore > topCandidate.contentScore) {
-          topCandidate = parent;
-        }
-      }
+      /* Turn all divs that don't have children block level elements into p's */
+      if (node.tagName === "DIV") {
+          if (node.innerHTML.search(regexps.divToPElements) === -1) {
+              var newNode = doc.createElement('p');
+              try {
+                  newNode.innerHTML = node.innerHTML;             
+                  node.parentNode.replaceChild(newNode, node);
+                  nodeIndex-=1;
 
-      // The grandparent gets half.
-      var grandparent = parent ? parent.parentNode : null;
-      if (grandparent) {
-        grandparent.contentScore += el.contentScore / 2;
-        if (!topCandidate || grandparent.contentScore > topCandidate.contentScore) {
-          topCandidate = grandparent;
-        }
-      }
-    } else {
-      el.contentScore = 0;
-    }
-
-    var childNodes = node.childNodes;
-    for (var i=0, l=childNodes.length; i<l; i++) {
-      var childEl = cleanNode(childNodes[i]);
-      if (childEl) el.appendChild(childEl);
-    }
-
-    return el;
+                  nodesToScore[nodesToScore.length] = node;
+              }
+              catch(e) {
+                  console.log("Could not alter div to p, probably an IE restriction, reverting back to div.: " + e);
+              }
+          }
+          else
+          {
+              /* EXPERIMENTAL */
+              for(var i = 0, il = node.childNodes.length; i < il; i+=1) {
+                  var childNode = node.childNodes[i];
+                  if(childNode.nodeType === 3) { // Node.TEXT_NODE
+                      var p = doc.createElement('p');
+                      p.innerHTML = childNode.nodeValue;
+                      p.style.display = 'inline';
+                      p.className = 'readability-styled';
+                      childNode.parentNode.replaceChild(p, childNode);
+                  }
+              }
+          }
+      } 
   }
-  return null;
-}
 
-// Get content from the top candidate and its siblings.
-function getContent(doc) {
-  var articleContent = doc.createElement('div');
-  if (!topCandidate) return articleContent;
+  /**
+   * Loop through all paragraphs, and assign a score to them based on how content-y they look.
+   * Then add their score to their parent node.
+   *
+   * A score is determined by things like number of commas, class names, etc. Maybe eventually link density.
+  **/
+  var candidates = [];
+  for (var pt=0; pt < nodesToScore.length; pt+=1) {
+      var parentNode      = nodesToScore[pt].parentNode;
+      var grandParentNode = parentNode ? parentNode.parentNode : null;
+      var innerText       = getInnerText(nodesToScore[pt]);
 
-  var siblingScoreThreshold = topCandidate.contentScore * 0.2;
-  var siblingNodes = topCandidate.parentNode.childNodes;
-  for (var i=0, l=siblingNodes.length; i<l; i++) {
-    var sibling = siblingNodes[i];
-    var append = false;
-    if (!sibling) continue;
-
-    if (sibling === topCandidate) append = true;
-
-    // Give a bonus if the sibling and top candidate have the same classname
-    var contentBonus = 0;
-    if (topCandidate.el.className !== '' && sibling.el.className === topCandidate.el.className) {
-      contentBonus += siblingScoreThreshold;
-    }
-
-    if (sibling.contentScore + contentBonus >= siblingScoreThreshold) {
-      append = true; 
-    }
-
-    if (sibling.nodeName === 'P') {
-      var linkDensity = getLinkDensity(sibling);
-      var nodeContent = getInnerText(sibling);
-      var nodeLength = nodeContent.length;
-
-      if (nodeLength > 80 && linkDensity < 0.25) {
-        append = true;
-      } else if (nodeLength < 80 && linkDensity === 0 && /\.( |$)/.test(nodeContent)) {
-        append = true;
+      if(!parentNode || typeof(parentNode.tagName) === 'undefined') {
+          continue;
       }
-    }
 
-    if (append) {
-      articleContent.appendChild(sibling.cloneNode(doc));
-    }
+      /* If this paragraph is less than 25 characters, don't even count it. */
+      if(innerText.length < 25) {
+          continue; }
+
+      /* Initialize readability data for the parent. */
+      if(typeof parentNode.readability === 'undefined') {
+          initializeNode(parentNode);
+          candidates.push(parentNode);
+      }
+
+      /* Initialize readability data for the grandparent. */
+      if(grandParentNode && typeof(grandParentNode.readability) === 'undefined' && typeof(grandParentNode.tagName) !== 'undefined') {
+          initializeNode(grandParentNode);
+          candidates.push(grandParentNode);
+      }
+
+      var contentScore = 0;
+
+      /* Add a point for the paragraph itself as a base. */
+      contentScore+=1;
+
+      /* Add points for any commas within this paragraph */
+      contentScore += innerText.split(',').length;
+      
+      /* For every 100 characters in this paragraph, add another point. Up to 3 points. */
+      contentScore += Math.min(Math.floor(innerText.length / 100), 3);
+      
+      /* Add the score to the parent. The grandparent gets half. */
+      parentNode.readability.contentScore += contentScore;
+
+      if(grandParentNode) {
+          grandParentNode.readability.contentScore += contentScore/2;             
+      }
   }
+
+  /**
+   * After we've calculated scores, loop through all of the possible candidate nodes we found
+   * and find the one with the highest score.
+  **/
+  var topCandidate = null;
+  for(var c=0, cl=candidates.length; c < cl; c+=1)
+  {
+      /**
+       * Scale the final candidates score based on link density. Good content should have a
+       * relatively small link density (5% or less) and be mostly unaffected by this operation.
+      **/
+      candidates[c].readability.contentScore = candidates[c].readability.contentScore * (1-getLinkDensity(candidates[c]));
+
+      console.log('Candidate: ' + candidates[c] + " (" + candidates[c].className + ":" + candidates[c].id + ") with score " + candidates[c].readability.contentScore);
+
+      if(!topCandidate || candidates[c].readability.contentScore > topCandidate.readability.contentScore) {
+          topCandidate = candidates[c]; }
+  }
+
+  /**
+   * If we still have no top candidate, just use the body as a last resort.
+   * We also have to copy the body node so it is something we can modify.
+   **/
+  if (topCandidate === null || topCandidate.tagName === "BODY")
+  {
+      topCandidate = doc.createElement("DIV");
+      topCandidate.innerHTML = page.innerHTML;
+      page.innerHTML = "";
+      page.appendChild(topCandidate);
+      initializeNode(topCandidate);
+  }
+
+  /**
+   * Now that we have the top candidate, look through its siblings for content that might also be related.
+   * Things like preambles, content split by ads that we removed, etc.
+  **/
+  var articleContent        = doc.createElement("DIV");
+  var siblingScoreThreshold = Math.max(10, topCandidate.readability.contentScore * 0.2);
+  var siblingNodes          = topCandidate.parentNode.childNodes;
+
+
+  for(var s=0, sl=siblingNodes.length; s < sl; s+=1) {
+      var siblingNode = siblingNodes[s];
+      var append      = false;
+
+      /**
+       * Fix for odd IE7 Crash where siblingNode does not exist even though this should be a live nodeList.
+       * Example of error visible here: http://www.esquire.com/features/honesty0707
+      **/
+      if(!siblingNode) {
+          continue;
+      }
+
+      console.log("Looking at sibling node: " + siblingNode + " (" + siblingNode.className + ":" + siblingNode.id + ")" + ((typeof siblingNode.readability !== 'undefined') ? (" with score " + siblingNode.readability.contentScore) : ''));
+      console.log("Sibling has score " + (siblingNode.readability ? siblingNode.readability.contentScore : 'Unknown'));
+
+      if(siblingNode === topCandidate)
+      {
+          append = true;
+      }
+
+      var contentBonus = 0;
+      /* Give a bonus if sibling nodes and top candidates have the example same classname */
+      if(siblingNode.className === topCandidate.className && topCandidate.className !== "") {
+          contentBonus += topCandidate.readability.contentScore * 0.2;
+      }
+
+      if(typeof siblingNode.readability !== 'undefined' && (siblingNode.readability.contentScore+contentBonus) >= siblingScoreThreshold)
+      {
+          append = true;
+      }
+      
+      if(siblingNode.nodeName === "P") {
+          var linkDensity = getLinkDensity(siblingNode);
+          var nodeContent = getInnerText(siblingNode);
+          var nodeLength  = nodeContent.length;
+          
+          if(nodeLength > 80 && linkDensity < 0.25)
+          {
+              append = true;
+          }
+          else if(nodeLength < 80 && linkDensity === 0 && nodeContent.search(/\.( |$)/) !== -1)
+          {
+              append = true;
+          }
+      }
+
+      if(append) {
+          console.log("Appending node: " + siblingNode);
+
+          var nodeToAppend = null;
+          if(siblingNode.nodeName !== "DIV" && siblingNode.nodeName !== "P") {
+              /* We have a node that isn't a common block level element, like a form or td tag. Turn it into a div so it doesn't get filtered out later by accident. */
+              
+              console.log("Altering siblingNode of " + siblingNode.nodeName + ' to div.');
+              nodeToAppend = doc.createElement("DIV");
+              try {
+                  nodeToAppend.id = siblingNode.id;
+                  nodeToAppend.innerHTML = siblingNode.innerHTML;
+              }
+              catch(er) {
+                  console.log("Could not alter siblingNode to div, probably an IE restriction, reverting back to original.");
+                  nodeToAppend = siblingNode;
+                  s-=1;
+                  sl-=1;
+              }
+          } else {
+              nodeToAppend = siblingNode;
+              s-=1;
+              sl-=1;
+          }
+          
+          /* To ensure a node does not interfere with readability styles, remove its classnames */
+          nodeToAppend.className = "";
+
+          /* Append sibling and subtract from our list because it removes the node when you append to another node */
+          articleContent.appendChild(nodeToAppend);
+      }
+  }
+
+  /**
+   * So we have all of the content that we need. Now we clean it up for presentation.
+  **/
+  //prepArticle(articleContent);
+
   return articleContent;
 }
 
