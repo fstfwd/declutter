@@ -35,7 +35,7 @@ testPages = testPages.filter(function(testPage) {
   return referenceTestPages.indexOf(testPage.dir) !== -1;
 });
 
-var testPage = testPages[1];
+var testPage = testPages[8];
 var doc;
 var result;
 
