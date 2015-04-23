@@ -91,21 +91,8 @@ function getClassWeight(e) {
   return weight;
 }
 
-function getInnerText(e, normalizeSpaces) {
-  var textContent    = "";
-
-  if(typeof(e.textContent) === "undefined" && typeof(e.innerText) === "undefined") {
-      return "";
-  }
-
-  normalizeSpaces = (typeof normalizeSpaces === 'undefined') ? true : normalizeSpaces;
-
-  textContent = e.textContent.replace(regexps.trim, "" );
-
-  if(normalizeSpaces) {
-      return textContent.replace(regexps.normalize, " "); }
-  else {
-      return textContent; }
+function getInnerText(node) {
+  return node.textContent.replace(regexps.trim, '').replace(regexps.normalize, ' ');
 }
 
 function getLinkDensity(node) {
