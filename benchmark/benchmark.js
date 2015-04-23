@@ -3,6 +3,7 @@ var fs = require("fs");
 var jsdom = require("jsdom").jsdom;
 var declutter = require("../declutter");
 var NodeReadability = require('./node-readability/readability');
+var MozillaReadability = require("./mozilla/Readability.js");
 
 // Load test pages
 var testPageRoot = path.join(__dirname, "../test/data");
@@ -67,13 +68,21 @@ suite("node-readability test page perf", function () {
   });
 });
 
-// suite("Mozilla test page perf", function () {
-//   set("iterations", 1);
-//   set("type", "static");
-//   testPages.forEach(function(testPage) {
-//     var doc = jsdom(testPage.source);
-//     bench(testPage.dir + " declutter perf", function() {
-//       declutter(doc.documentElement, doc).innerHTML;
-//     });
-//   });
-// });
+suite("Mozilla test page perf", function () {
+  set("iterations", 1);
+  set("type", "static");
+
+  var uri = {
+    spec: "http://fakehost/test/page.html",
+    host: "fakehost",
+    prePath: "http://fakehost",
+    scheme: "http",
+    pathBase: "http://fakehost/test"
+  };
+  testPages.forEach(function(testPage) {
+    var doc = jsdom(testPage.source);
+    bench(testPage.dir + " perf", function() {
+      new MozillaReadability(uri, doc).parse();
+    });
+  });
+});

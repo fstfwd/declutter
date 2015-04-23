@@ -295,7 +295,7 @@ Readability.prototype = {
   _nextElement: function (node) {
     var next = node;
     while (next
-        && (next.nodeType != Node.ELEMENT_NODE)
+        && (next.nodeType !== 1)
         && this.REGEXPS.whitespace.test(next.textContent)) {
       next = next.nextSibling;
     }
@@ -623,7 +623,7 @@ Readability.prototype = {
           } else {
             // EXPERIMENTAL
             this._forEachNode(node.childNodes, function(childNode) {
-              if (childNode.nodeType === Node.TEXT_NODE) {
+              if (childNode.nodeType === 3) {
                 var p = doc.createElement('p');
                 p.textContent = childNode.textContent;
                 p.style.display = 'inline';
@@ -995,7 +995,7 @@ Readability.prototype = {
 
     // And there should be no text nodes with real content
     return !this._someNode(element.childNodes, function(node) {
-      return node.nodeType === Node.TEXT_NODE &&
+      return node.nodeType === 3 &&
              this.REGEXPS.hasContent.test(node.textContent);
     });
   },
@@ -1755,3 +1755,5 @@ Readability.prototype = {
              excerpt: metadata.excerpt };
   }
 };
+
+module.exports = Readability;
