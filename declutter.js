@@ -167,7 +167,7 @@ function cleanNode(node, nodesToScore) {
     if (regexps.unlikelyCandidates.test(unlikelyMatchString) && !regexps.okMaybeItsACandidate.test(unlikelyMatchString)) return null;
 
     var tagName = node.tagName;
-    if (/script|style|meta|objectform/i.test(tagName)) return null;
+    if (/script|style|meta|link|objectform/i.test(tagName)) return null;
 
     // Create a NodeRef
     var el = new NodeRef(node, 'element');
@@ -189,9 +189,24 @@ function cleanNode(node, nodesToScore) {
   return null;
 }
 
+var start = 0;
+function profileStart() {
+  start = Date.now();
+}
+
+function profile (msg) {
+  var t = Date.now();
+  console.log(msg + ': ' + (t - start) + 'ms');
+  start = t;
+}
+
 function declutter(page, doc) {
+  profileStart();
+
   var nodesToScore = [];
   cleanNode(page, nodesToScore);
+  
+  profile('cleanNode');
 
   var candidates = [];
   for (var i=0, l=nodesToScore.length; i<l; i++) {
@@ -237,6 +252,8 @@ function declutter(page, doc) {
       }
   }
 
+  profile('assign content scores');
+
   var topCandidate = null;
   for (var i=0, l=candidates.length; i<l; i++) {
       /**
@@ -251,8 +268,12 @@ function declutter(page, doc) {
           topCandidate = candidates[i]; }
   }
 
+  profile('find top candidate');
+
   var articleContent = doc.createElement("DIV");
   articleContent.appendChild(topCandidate.cloneNode(doc));
+
+  profile('clone top candidate');
   return articleContent;
 }
 
