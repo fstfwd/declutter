@@ -63,8 +63,7 @@ suite("node-readability test page perf", function () {
   testPages.forEach(function(testPage) {
     var doc = jsdom(testPage.source);
     bench(testPage.dir + " perf", function() {
-      readability = new NodeReadability(doc.defaultView, {});
-      readability.content;
+      new NodeReadability(doc.defaultView, {}).content;
     });
   });
 });
