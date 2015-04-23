@@ -262,7 +262,7 @@ function declutter(page, doc) {
       **/
       candidates[c].readability.contentScore = candidates[c].readability.contentScore * (1-getLinkDensity(candidates[c].el));
 
-      console.log('Candidate: ' + candidates[c].el + " (" + candidates[c].el.className + ":" + candidates[c].el.id + ") with score " + candidates[c].readability.contentScore);
+      //console.log('Candidate: ' + candidates[c].el + " (" + candidates[c].el.className + ":" + candidates[c].el.id + ") with score " + candidates[c].readability.contentScore);
 
       if(!topCandidate || candidates[c].readability.contentScore > topCandidate.readability.contentScore) {
           topCandidate = candidates[c]; }
@@ -274,97 +274,6 @@ function declutter(page, doc) {
   **/
   var articleContent        = doc.createElement("DIV");
   articleContent.appendChild(topCandidate.cloneNode(doc));
-  return articleContent;
-
-
-  var siblingScoreThreshold = Math.max(10, topCandidate.readability.contentScore * 0.2);
-  var siblingNodes          = topCandidate.parentNode.childNodes;
-
-
-  for(var s=0, sl=siblingNodes.length; s < sl; s+=1) {
-      var siblingNode = siblingNodes[s];
-      var append      = false;
-
-      /**
-       * Fix for odd IE7 Crash where siblingNode does not exist even though this should be a live nodeList.
-       * Example of error visible here: http://www.esquire.com/features/honesty0707
-      **/
-      if(!siblingNode) {
-          continue;
-      }
-
-      console.log("Looking at sibling node: " + siblingNode + " (" + siblingNode.className + ":" + siblingNode.id + ")" + ((typeof siblingNode.readability !== 'undefined') ? (" with score " + siblingNode.readability.contentScore) : ''));
-      console.log("Sibling has score " + (siblingNode.readability ? siblingNode.readability.contentScore : 'Unknown'));
-
-      if(siblingNode === topCandidate)
-      {
-          append = true;
-      }
-
-      var contentBonus = 0;
-      /* Give a bonus if sibling nodes and top candidates have the example same classname */
-      if(siblingNode.className === topCandidate.className && topCandidate.className !== "") {
-          contentBonus += topCandidate.readability.contentScore * 0.2;
-      }
-
-      if(typeof siblingNode.readability !== 'undefined' && (siblingNode.readability.contentScore+contentBonus) >= siblingScoreThreshold)
-      {
-          append = true;
-      }
-      
-      if(siblingNode.nodeName === "P") {
-          var linkDensity = getLinkDensity(siblingNode);
-          var nodeContent = getInnerText(siblingNode);
-          var nodeLength  = nodeContent.length;
-          
-          if(nodeLength > 80 && linkDensity < 0.25)
-          {
-              append = true;
-          }
-          else if(nodeLength < 80 && linkDensity === 0 && nodeContent.search(/\.( |$)/) !== -1)
-          {
-              append = true;
-          }
-      }
-
-      if(append) {
-          console.log("Appending node: " + siblingNode);
-
-          var nodeToAppend = null;
-          if(siblingNode.nodeName !== "DIV" && siblingNode.nodeName !== "P") {
-              /* We have a node that isn't a common block level element, like a form or td tag. Turn it into a div so it doesn't get filtered out later by accident. */
-              
-              console.log("Altering siblingNode of " + siblingNode.nodeName + ' to div.');
-              nodeToAppend = doc.createElement("DIV");
-              try {
-                  nodeToAppend.id = siblingNode.id;
-                  nodeToAppend.innerHTML = siblingNode.innerHTML;
-              }
-              catch(er) {
-                  console.log("Could not alter siblingNode to div, probably an IE restriction, reverting back to original.");
-                  nodeToAppend = siblingNode;
-                  s-=1;
-                  sl-=1;
-              }
-          } else {
-              nodeToAppend = siblingNode;
-              s-=1;
-              sl-=1;
-          }
-          
-          /* To ensure a node does not interfere with readability styles, remove its classnames */
-          nodeToAppend.className = "";
-
-          /* Append sibling and subtract from our list because it removes the node when you append to another node */
-          articleContent.appendChild(nodeToAppend);
-      }
-  }
-
-  /**
-   * So we have all of the content that we need. Now we clean it up for presentation.
-  **/
-  //prepArticle(articleContent);
-
   return articleContent;
 }
 

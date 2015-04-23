@@ -14,7 +14,25 @@ var testPages = fs.readdirSync(testPageRoot).map(function(dir) {
   };
 });
 
-var testPage = testPages[0];
+var referenceTestPages = [
+  "002",
+  "herald-sun-1",
+  "lifehacker-working",
+  "lifehacker-post-comment-load",
+  "medium-1",
+  "medium-2",
+  "salon-1",
+  "tmz-1",
+  "wapo-1",
+  "wapo-2",
+  "webmd-1",
+];
+
+testPages = testPages.filter(function(testPage) {
+  return referenceTestPages.indexOf(testPage.dir) !== -1;
+});
+
+var testPage = testPages[1];
 var doc = jsdom(testPage.source);
 var result = declutter(doc.documentElement, doc).innerHTML;
 fs.writeFileSync('1.html', result);
