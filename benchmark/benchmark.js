@@ -4,7 +4,7 @@ var jsdom = require("jsdom").jsdom;
 var declutter = require("../declutter");
 var Arc90Readability = require('./arc90/readability');
 var NodeReadability = require('./node-readability/readability');
-var MozillaReadability = require("./mozilla/Readability.js");
+var MozillaReadability = require("./mozilla/Readability");
 
 // Load test pages
 var testPageRoot = path.join(__dirname, "../test/data");
@@ -51,8 +51,8 @@ suite("Arc90 test page perf", function () {
   set("type", "static");
   testPages.forEach(function(testPage) {
     var doc = jsdom(testPage.source);
-    bench(testPage.dir + " declutter perf", function() {
-      declutter(doc.documentElement, doc).innerHTML;
+    bench(testPage.dir + " perf", function() {
+      Arc90Readability.init(doc.defaultView, doc);
     });
   });
 });

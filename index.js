@@ -1,7 +1,10 @@
 var path = require("path");
 var fs = require("fs");
-var declutter = require("./declutter");
 var jsdom = require("jsdom").jsdom;
+var declutter = require("./declutter");
+var Arc90Readability = require('./benchmark/arc90/readability');
+var NodeReadability = require('./benchmark/node-readability/readability');
+var MozillaReadability = require("./benchmark/mozilla/Readability");
 
 // Load test pages
 var testPageRoot = path.join(__dirname, "test/data");
@@ -32,7 +35,14 @@ testPages = testPages.filter(function(testPage) {
   return referenceTestPages.indexOf(testPage.dir) !== -1;
 });
 
+// declutter
+// var testPage = testPages[1];
+// var doc = jsdom(testPage.source);
+// var result = declutter(doc.documentElement, doc).innerHTML;
+// fs.writeFileSync('1.html', result);
+
+// arc90
 var testPage = testPages[1];
 var doc = jsdom(testPage.source);
-var result = declutter(doc.documentElement, doc).innerHTML;
+var result = Arc90Readability.init(doc.defaultView, doc);
 fs.writeFileSync('1.html', result);
