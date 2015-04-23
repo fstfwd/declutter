@@ -142,18 +142,19 @@ Node.prototype.cloneNode = function(doc) {
     if (node.type === 'text') {
       return doc.createTextNode(node.el.nodeValue);
     } else if (node.type === 'element') {
-      var len = node.childNodes.length;
-      if (len === 0) {
-        // Remove empty nodes
-        return null;
-      } else {
-        var el = doc.createElement(node.el.tagName);
-        for (var i=0, l=node.childNodes.length; i<l; i++) {
-          var childEl = cloneNode(node.childNodes[i], doc);
-          if (childEl) el.appendChild(childEl);
-        }
-        return el;
+      var tagName = node.el.tagName;
+      var el = doc.createElement(tagName);
+      if (tagName === 'A') {
+        el.setAttribute('href', node.el.getAttribute('href') || '');
+      } else if (tagName === 'IMG') {
+        el.setAttribute('src', node.el.getAttribute('src') || '');
+        el.setAttribute('alt', node.el.getAttribute('alt') || '');
       }
+      for (var i=0, l=node.childNodes.length; i<l; i++) {
+        var childEl = cloneNode(node.childNodes[i], doc);
+        if (childEl) el.appendChild(childEl);
+      }
+      return el;
     }
     return null;
   }
@@ -185,7 +186,7 @@ function cleanNode(node, nodesToScore) {
     }
 
     if (node.tagName === "P" || node.tagName === "TD" || node.tagName === "PRE") {
-      nodesToScore.push(node);
+      nodesToScore.push(el);
     }
 
     return el;
@@ -207,9 +208,9 @@ function declutter(page, doc) {
   for (var pt=0; pt < nodesToScore.length; pt+=1) {
       var parentNode      = nodesToScore[pt].parentNode;
       var grandParentNode = parentNode ? parentNode.parentNode : null;
-      var innerText       = getInnerText(nodesToScore[pt]);
+      var innerText       = getInnerText(nodesToScore[pt].el);
 
-      if(!parentNode || typeof(parentNode.tagName) === 'undefined') {
+      if(!parentNode || typeof(parentNode.el.tagName) === 'undefined') {
           continue;
       }
 
@@ -224,7 +225,7 @@ function declutter(page, doc) {
       }
 
       /* Initialize readability data for the grandparent. */
-      if(grandParentNode && typeof(grandParentNode.readability) === 'undefined' && typeof(grandParentNode.tagName) !== 'undefined') {
+      if(grandParentNode && typeof(grandParentNode.readability) === 'undefined' && typeof(grandParentNode.el.tagName) !== 'undefined') {
           initializeNode(grandParentNode);
           candidates.push(grandParentNode);
       }
@@ -259,25 +260,12 @@ function declutter(page, doc) {
        * Scale the final candidates score based on link density. Good content should have a
        * relatively small link density (5% or less) and be mostly unaffected by this operation.
       **/
-      candidates[c].readability.contentScore = candidates[c].readability.contentScore * (1-getLinkDensity(candidates[c]));
+      candidates[c].readability.contentScore = candidates[c].readability.contentScore * (1-getLinkDensity(candidates[c].el));
 
-      console.log('Candidate: ' + candidates[c] + " (" + candidates[c].className + ":" + candidates[c].id + ") with score " + candidates[c].readability.contentScore);
+      console.log('Candidate: ' + candidates[c].el + " (" + candidates[c].el.className + ":" + candidates[c].el.id + ") with score " + candidates[c].readability.contentScore);
 
       if(!topCandidate || candidates[c].readability.contentScore > topCandidate.readability.contentScore) {
           topCandidate = candidates[c]; }
-  }
-
-  /**
-   * If we still have no top candidate, just use the body as a last resort.
-   * We also have to copy the body node so it is something we can modify.
-   **/
-  if (topCandidate === null || topCandidate.tagName === "BODY")
-  {
-      topCandidate = doc.createElement("DIV");
-      topCandidate.innerHTML = page.innerHTML;
-      page.innerHTML = "";
-      page.appendChild(topCandidate);
-      initializeNode(topCandidate);
   }
 
   /**
@@ -285,6 +273,10 @@ function declutter(page, doc) {
    * Things like preambles, content split by ads that we removed, etc.
   **/
   var articleContent        = doc.createElement("DIV");
+  articleContent.appendChild(topCandidate.cloneNode(doc));
+  return articleContent;
+
+
   var siblingScoreThreshold = Math.max(10, topCandidate.readability.contentScore * 0.2);
   var siblingNodes          = topCandidate.parentNode.childNodes;
 
