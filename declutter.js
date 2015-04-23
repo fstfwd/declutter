@@ -185,34 +185,27 @@ function declutter(page, doc) {
   var nodesToScore = [];
   cleanNode(page, nodesToScore);
 
-  /**
-   * Loop through all paragraphs, and assign a score to them based on how content-y they look.
-   * Then add their score to their parent node.
-   *
-   * A score is determined by things like number of commas, class names, etc. Maybe eventually link density.
-  **/
   var candidates = [];
-  for (var pt=0; pt < nodesToScore.length; pt+=1) {
-      var parentNode      = nodesToScore[pt].parentNode;
+  for (var i=0, l=nodesToScore.length; i<l; i++) {
+      var parentNode = nodesToScore[i].parentNode;
       var grandParentNode = parentNode ? parentNode.parentNode : null;
-      var innerText       = getInnerText(nodesToScore[pt].el);
+      var innerText = getInnerText(nodesToScore[i].el);
 
       if(!parentNode || typeof(parentNode.el.tagName) === 'undefined') {
           continue;
       }
 
       /* If this paragraph is less than 25 characters, don't even count it. */
-      if(innerText.length < 25) {
-          continue; }
+      if (innerText.length < 25) continue;
 
       /* Initialize readability data for the parent. */
-      if(typeof parentNode.readability === 'undefined') {
+      if (typeof parentNode.readability === 'undefined') {
           initializeNode(parentNode);
           candidates.push(parentNode);
       }
 
       /* Initialize readability data for the grandparent. */
-      if(grandParentNode && typeof(grandParentNode.readability) === 'undefined' && typeof(grandParentNode.el.tagName) !== 'undefined') {
+      if (grandParentNode && typeof(grandParentNode.readability) === 'undefined' && typeof(grandParentNode.el.tagName) !== 'undefined') {
           initializeNode(grandParentNode);
           candidates.push(grandParentNode);
       }
@@ -220,7 +213,7 @@ function declutter(page, doc) {
       var contentScore = 0;
 
       /* Add a point for the paragraph itself as a base. */
-      contentScore+=1;
+      contentScore += 1;
 
       /* Add points for any commas within this paragraph */
       contentScore += innerText.split(',').length;
