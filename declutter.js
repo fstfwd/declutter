@@ -122,69 +122,80 @@ function getLinkDensity(e) {
 
 
 /**
+ * A Lightweight Node Object
+ */
+
+function Node(el, type) {
+  this.el = el;
+  this.type = type;
+  this.childNodes = [];
+  this.parentNode = null;
+}
+
+Node.prototype.appendChild = function(child) {
+  this.childNodes.push(child);
+  child.parentNode = this;
+}
+
+Node.prototype.cloneNode = function(doc) {
+  var cloneNode = function(node, doc) {
+    if (node.type === 'text') {
+      return doc.createTextNode(node.el.nodeValue);
+    } else if (node.type === 'element') {
+      var len = node.childNodes.length;
+      if (len === 0) {
+        // Remove empty nodes
+        return null;
+      } else {
+        var el = doc.createElement(node.el.tagName);
+        for (var i=0, l=node.childNodes.length; i<l; i++) {
+          var childEl = cloneNode(node.childNodes[i], doc);
+          if (childEl) el.appendChild(childEl);
+        }
+        return el;
+      }
+    }
+    return null;
+  }
+  return cloneNode(this, doc);
+}
+
+
+/**
  * Declutter
  */
 
-function declutter(page, doc) {
-  var allElements = page.getElementsByTagName('*');
+function cleanNode(node, nodesToScore) {
+  if (node.nodeType === 3) { // Text node
+    return new Node(node, 'text');
+  } else if (node.nodeType === 1) { // Element node
+    // Remove nodes that are unlikely candidates
+    var unlikelyMatchString = node.className + ' ' + node.id;
+    if (regexps.unlikelyCandidates.test(unlikelyMatchString) && !regexps.okMaybeItsACandidate.test(unlikelyMatchString)) return null;
 
-  /**
-   * First, node prepping. Trash nodes that look cruddy (like ones with the class name "comment", etc), and turn divs
-   * into P tags where they have been used inappropriately (as in, where they contain no other block level elements.)
-   *
-   * Note: Assignment from index for performance. See http://www.peachpit.com/articles/article.aspx?p=31567&seqNum=5
-   * TODO: Shouldn't this be a reverse traversal?
-  **/
-  var node = null;
-  var nodesToScore = [];
-  for (var nodeIndex = 0; (node = allElements[nodeIndex]); nodeIndex+=1) {
-      /* Remove unlikely candidates */
-      var unlikelyMatchString = node.className + node.id;
-      if (unlikelyMatchString.search(regexps.unlikelyCandidates) !== -1 && unlikelyMatchString.search(regexps.okMaybeItsACandidate) === -1 && node.tagName !== "BODY")
-      {
-          console.log("Removing unlikely candidate - " + unlikelyMatchString);
-          if (node.parentNode) {
-            node.parentNode.removeChild(node);
-            nodeIndex-=1;
-          }
-          continue;
-      }               
+    var tagName = node.tagName;
+    if (/script|style|meta/i.test(tagName)) return null;
 
-      if (node.tagName === "P" || node.tagName === "TD" || node.tagName === "PRE") {
-          nodesToScore[nodesToScore.length] = node;
-      }
+    // Create a new node
+    var el = new Node(node, 'element');
+    var childNodes = node.childNodes;
+    for (var i=0, l=childNodes.length; i<l; i++) {
+      var childEl = cleanNode(childNodes[i], nodesToScore);
+      if (childEl) el.appendChild(childEl);
+    }
 
-      /* Turn all divs that don't have children block level elements into p's */
-      if (node.tagName === "DIV") {
-          if (node.innerHTML.search(regexps.divToPElements) === -1) {
-              var newNode = doc.createElement('p');
-              try {
-                  newNode.innerHTML = node.innerHTML;             
-                  node.parentNode.replaceChild(newNode, node);
-                  nodeIndex-=1;
+    if (node.tagName === "P" || node.tagName === "TD" || node.tagName === "PRE") {
+      nodesToScore.push(node);
+    }
 
-                  nodesToScore[nodesToScore.length] = node;
-              }
-              catch(e) {
-                  console.log("Could not alter div to p, probably an IE restriction, reverting back to div.: " + e);
-              }
-          }
-          else
-          {
-              /* EXPERIMENTAL */
-              for(var i = 0, il = node.childNodes.length; i < il; i+=1) {
-                  var childNode = node.childNodes[i];
-                  if(childNode.nodeType === 3) { // Node.TEXT_NODE
-                      var p = doc.createElement('p');
-                      p.innerHTML = childNode.nodeValue;
-                      p.style.display = 'inline';
-                      p.className = 'readability-styled';
-                      childNode.parentNode.replaceChild(p, childNode);
-                  }
-              }
-          }
-      } 
+    return el;
   }
+  return null;
+}
+
+function declutter(page, doc) {
+  var nodesToScore = [];
+  cleanNode(page, nodesToScore);
 
   /**
    * Loop through all paragraphs, and assign a score to them based on how content-y they look.
