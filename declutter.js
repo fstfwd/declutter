@@ -112,33 +112,33 @@ function getLinkDensity(node) {
  * A Lightweight Node Object
  */
 
-function Node(el, type) {
-  this.el = el;
+function NodeRef(node, type) {
+  this.node = node;
   this.type = type;
   this.childNodes = [];
   this.parentNode = null;
 }
 
-Node.prototype.appendChild = function(child) {
+NodeRef.prototype.appendChild = function(child) {
   this.childNodes.push(child);
   child.parentNode = this;
 }
 
-Node.prototype.cloneNode = function(doc) {
-  var cloneNode = function(node, doc) {
-    if (node.type === 'text') {
-      return doc.createTextNode(node.el.nodeValue);
-    } else if (node.type === 'element') {
-      var tagName = node.el.tagName;
+NodeRef.prototype.cloneNode = function(doc) {
+  var cloneNode = function(nodeRef, doc) {
+    if (nodeRef.type === 'text') {
+      return doc.createTextNode(nodeRef.node.nodeValue);
+    } else if (nodeRef.type === 'element') {
+      var tagName = nodeRef.node.tagName;
       var el = doc.createElement(tagName);
       if (tagName === 'A') {
-        el.setAttribute('href', node.el.getAttribute('href') || '');
+        el.setAttribute('href', nodeRef.node.getAttribute('href') || '');
       } else if (tagName === 'IMG') {
-        el.setAttribute('src', node.el.getAttribute('src') || '');
-        el.setAttribute('alt', node.el.getAttribute('alt') || '');
+        el.setAttribute('src', nodeRef.node.getAttribute('src') || '');
+        el.setAttribute('alt', nodeRef.node.getAttribute('alt') || '');
       }
-      for (var i=0, l=node.childNodes.length; i<l; i++) {
-        var childEl = cloneNode(node.childNodes[i], doc);
+      for (var i=0, l=nodeRef.childNodes.length; i<l; i++) {
+        var childEl = cloneNode(nodeRef.childNodes[i], doc);
         if (childEl) el.appendChild(childEl);
       }
       return el;
@@ -155,7 +155,7 @@ Node.prototype.cloneNode = function(doc) {
 
 function cleanNode(node, nodesToScore) {
   if (node.nodeType === 3) { // Text node
-    return new Node(node, 'text');
+    return new NodeRef(node, 'text');
   } else if (node.nodeType === 1) { // Element node
     // Remove nodes that are unlikely candidates
     var unlikelyMatchString = node.className + ' ' + node.id;
@@ -165,7 +165,7 @@ function cleanNode(node, nodesToScore) {
     if (/script|style|meta/i.test(tagName)) return null;
 
     // Create a new node
-    var el = new Node(node, 'element');
+    var el = new NodeRef(node, 'element');
     var childNodes = node.childNodes;
     for (var i=0, l=childNodes.length; i<l; i++) {
       var childEl = cleanNode(childNodes[i], nodesToScore);
@@ -189,9 +189,9 @@ function declutter(page, doc) {
   for (var i=0, l=nodesToScore.length; i<l; i++) {
       var parentNode = nodesToScore[i].parentNode;
       var grandParentNode = parentNode ? parentNode.parentNode : null;
-      var innerText = getInnerText(nodesToScore[i].el);
+      var innerText = getInnerText(nodesToScore[i].node);
 
-      if(!parentNode || typeof(parentNode.el.tagName) === 'undefined') {
+      if(!parentNode || typeof(parentNode.node.tagName) === 'undefined') {
           continue;
       }
 
@@ -205,7 +205,7 @@ function declutter(page, doc) {
       }
 
       /* Initialize readability data for the grandparent. */
-      if (grandParentNode && typeof(grandParentNode.readability) === 'undefined' && typeof(grandParentNode.el.tagName) !== 'undefined') {
+      if (grandParentNode && typeof(grandParentNode.readability) === 'undefined' && typeof(grandParentNode.node.tagName) !== 'undefined') {
           initializeNode(grandParentNode);
           candidates.push(grandParentNode);
       }
@@ -235,9 +235,9 @@ function declutter(page, doc) {
        * Scale the final candidates score based on link density. Good content should have a
        * relatively small link density (5% or less) and be mostly unaffected by this operation.
       **/
-      candidates[i].readability.contentScore *= 1 - getLinkDensity(candidates[i].el);
+      candidates[i].readability.contentScore *= 1 - getLinkDensity(candidates[i].node);
 
-      //console.log('Candidate: ' + candidates[i].el + " (" + candidates[i].el.className + ":" + candidates[i].el.id + ") with score " + candidates[i].readability.contentScore);
+      //console.log('Candidate: ' + candidates[i] + " (" + candidates[i].node.className + ":" + candidates[i].node.id + ") with score " + candidates[i].readability.contentScore);
 
       if (!topCandidate || candidates[i].readability.contentScore > topCandidate.readability.contentScore) {
           topCandidate = candidates[i]; }
