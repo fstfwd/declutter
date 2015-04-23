@@ -6,7 +6,6 @@
 
 ;(function() {
 
-
 /**
  * Helpers
  */
@@ -109,13 +108,12 @@ function getInnerText(e, normalizeSpaces) {
       return textContent; }
 }
 
-function getLinkDensity(e) {
-  var links      = e.getElementsByTagName("a");
-  var textLength = getInnerText(e).length;
+function getLinkDensity(node) {
+  var links = node.getElementsByTagName('a');
+  var textLength = getInnerText(node).length;
   var linkLength = 0;
-  for(var i=0, il=links.length; i<il;i+=1)
-  {
-      linkLength += getInnerText(links[i]).length;
+  for (var i=0, l=links.length; i<l; i++) {
+    linkLength += getInnerText(links[i]).length;
   }
   return linkLength / textLength;
 }
@@ -272,7 +270,7 @@ function declutter(page, doc) {
    * Now that we have the top candidate, look through its siblings for content that might also be related.
    * Things like preambles, content split by ads that we removed, etc.
   **/
-  var articleContent        = doc.createElement("DIV");
+  var articleContent = doc.createElement("DIV");
   articleContent.appendChild(topCandidate.cloneNode(doc));
   return articleContent;
 }
