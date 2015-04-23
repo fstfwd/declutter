@@ -137,9 +137,14 @@ NodeRef.prototype.cloneNode = function(doc) {
         el.setAttribute('src', nodeRef.node.getAttribute('src') || '');
         el.setAttribute('alt', nodeRef.node.getAttribute('alt') || '');
       }
-      for (var i=0, l=nodeRef.childNodes.length; i<l; i++) {
-        var childEl = cloneNode(nodeRef.childNodes[i], doc);
-        if (childEl) el.appendChild(childEl);
+
+      if (tagName === 'PRE') {
+        el.innerHTML = nodeRef.node.textContent;
+      } else {
+        for (var i=0, l=nodeRef.childNodes.length; i<l; i++) {
+          var childEl = cloneNode(nodeRef.childNodes[i], doc);
+          if (childEl) el.appendChild(childEl);
+        }
       }
       return el;
     }
@@ -162,14 +167,17 @@ function cleanNode(node, nodesToScore) {
     if (regexps.unlikelyCandidates.test(unlikelyMatchString) && !regexps.okMaybeItsACandidate.test(unlikelyMatchString)) return null;
 
     var tagName = node.tagName;
-    if (/script|style|meta/i.test(tagName)) return null;
+    if (/script|style|meta|objectform/i.test(tagName)) return null;
 
-    // Create a new node
+    // Create a NodeRef
     var el = new NodeRef(node, 'element');
-    var childNodes = node.childNodes;
-    for (var i=0, l=childNodes.length; i<l; i++) {
-      var childEl = cleanNode(childNodes[i], nodesToScore);
-      if (childEl) el.appendChild(childEl);
+
+    if (tagName !== 'PRE') {
+      var childNodes = node.childNodes;
+      for (var i=0, l=childNodes.length; i<l; i++) {
+        var childEl = cleanNode(childNodes[i], nodesToScore);
+        if (childEl) el.appendChild(childEl);
+      }
     }
 
     if (node.tagName === "P" || node.tagName === "TD" || node.tagName === "PRE") {
