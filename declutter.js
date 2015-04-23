@@ -122,21 +122,23 @@ Node.prototype.appendChild = function(child) {
 
 Node.prototype.cloneNode = function(doc) {
   var cloneNode = function(node, doc) {
-    var el;
-    switch (node.type) {
-      case 'text':
-        el = doc.createTextNode(node.el.nodeValue);
-        break;
-      case 'element':
-        el = doc.createElement(node.el.tagName);
+    if (node.type === 'text') {
+      return doc.createTextNode(node.el.nodeValue);
+    } else if (node.type === 'element') {
+      var len = node.childNodes.length;
+      if (len === 0) {
+        // Remove empty nodes
+        return null;
+      } else {
+        var el = doc.createElement(node.el.tagName);
+        for (var i=0, l=node.childNodes.length; i<l; i++) {
+          var childEl = cloneNode(node.childNodes[i], doc);
+          if (childEl) el.appendChild(childEl);
+        }
+        return el;
+      }
     }
-
-    for (var i=0, l=node.childNodes.length; i<l; i++) {
-      var childEl = cloneNode(node.childNodes[i], doc);
-      if (childEl) el.appendChild(childEl);
-    }
-    
-    return el;
+    return null;
   }
   return cloneNode(this, doc);
 }
