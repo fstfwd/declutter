@@ -39,15 +39,15 @@ var testPage = testPages[1];
 var doc;
 var result;
 
-// // declutter
-// doc = jsdom(testPage.source);
-// result = declutter(doc.documentElement, doc).innerHTML;
-// fs.writeFileSync('1.html', result);
-
-// arc90
+// declutter
 doc = jsdom(testPage.source);
-result = Arc90Readability.init(doc.defaultView, doc);
+result = declutter(doc.documentElement, doc).innerHTML;
 fs.writeFileSync('1.html', result);
+
+// // arc90
+// doc = jsdom(testPage.source);
+// result = Arc90Readability.init(doc.defaultView, doc);
+// fs.writeFileSync('1.html', result);
 
 // // node-readability
 // doc = jsdom(testPage.source);
