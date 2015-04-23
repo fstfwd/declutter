@@ -229,29 +229,20 @@ function declutter(page, doc) {
       }
   }
 
-  /**
-   * After we've calculated scores, loop through all of the possible candidate nodes we found
-   * and find the one with the highest score.
-  **/
   var topCandidate = null;
-  for(var c=0, cl=candidates.length; c < cl; c+=1)
-  {
+  for (var i=0, l=candidates.length; i<l; i++) {
       /**
        * Scale the final candidates score based on link density. Good content should have a
        * relatively small link density (5% or less) and be mostly unaffected by this operation.
       **/
-      candidates[c].readability.contentScore = candidates[c].readability.contentScore * (1-getLinkDensity(candidates[c].el));
+      candidates[i].readability.contentScore *= 1 - getLinkDensity(candidates[i].el);
 
-      //console.log('Candidate: ' + candidates[c].el + " (" + candidates[c].el.className + ":" + candidates[c].el.id + ") with score " + candidates[c].readability.contentScore);
+      //console.log('Candidate: ' + candidates[i].el + " (" + candidates[i].el.className + ":" + candidates[i].el.id + ") with score " + candidates[i].readability.contentScore);
 
-      if(!topCandidate || candidates[c].readability.contentScore > topCandidate.readability.contentScore) {
-          topCandidate = candidates[c]; }
+      if (!topCandidate || candidates[i].readability.contentScore > topCandidate.readability.contentScore) {
+          topCandidate = candidates[i]; }
   }
 
-  /**
-   * Now that we have the top candidate, look through its siblings for content that might also be related.
-   * Things like preambles, content split by ads that we removed, etc.
-  **/
   var articleContent = doc.createElement("DIV");
   articleContent.appendChild(topCandidate.cloneNode(doc));
   return articleContent;
