@@ -160,7 +160,7 @@ function cleanNode(node) {
     return new Node(node, 'text');
   } else if (node.nodeType === 1) { // Element node
     // Remove nodes that are unlikely candidates
-    var unlikelyMatchString = node.className + node.id;
+    var unlikelyMatchString = node.className + ' ' + node.id;
     if (regexps.unlikelyCandidates.test(unlikelyMatchString) && !regexps.okMaybeItsACandidate.test(unlikelyMatchString)) return null;
 
     var tagName = node.tagName;
