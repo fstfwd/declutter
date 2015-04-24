@@ -66,7 +66,7 @@ Test data came from [Mozilla Readability](https://github.com/mozilla/readability
 $ matcha
 ```
 
-This plot compares four libraries: [Arc90](https://code.google.com/p/arc90labs-readability/), [node-readability](https://github.com/luin/readability), [Mozilla Readability](https://github.com/mozilla/readability) and declutter. Benchmark data came from Mozilla Readabillity, and consists of several real-world webpages pulled from Lifehacker, Medium, Salon, etc.
+This plot compares four libraries: [Arc90](https://code.google.com/p/arc90labs-readability/), [node-readability](https://github.com/luin/readability), [Mozilla Readability](https://github.com/mozilla/readability) and declutter. Benchmark data came from Mozilla Readabillity, and consist of several real-world webpages pulled from Lifehacker, Medium, Salon, etc.
 
 For a fair comparison, all libraries use JSDOM as the DOM implementation. JSDOM is quite slow, so if you care about the absolute speed (op/s), you should switch to a faster DOM implementation such as Cheerio.
 
