@@ -53,7 +53,7 @@ console.log(el.innerHTML);
 Make sure you have `mocha` installed. Then:
 
 ```bash
-$ cd uncluttered/
+$ cd decluttered/
 $ npm install --dev
 $ mocha
 ```
