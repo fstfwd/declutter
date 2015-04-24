@@ -32,6 +32,10 @@ Test data came from [Mozilla Readability](https://github.com/mozilla/readability
 $ matcha
 ```
 
+This plot compares four libraries: [Arc90](https://code.google.com/p/arc90labs-readability/), [node-readability](https://github.com/luin/readability), [Mozilla Readability](https://github.com/mozilla/readability) and declutter. Benchmark data came from Mozilla Readabillity, and consists of several real-world webpages pulled from Lifehacker, Medium, Salon, etc.
+
+The x-axis stands for op/s, so the longer the better. You can see that "declutter.js" performs 2x to 10x better than other libraries.
+
 ![Benchmark](https://raw.githubusercontent.com/ylian/declutter/master/benchmark/result.png)
 
 ## License
