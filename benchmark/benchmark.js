@@ -39,50 +39,50 @@ suite("declutter test page perf", function () {
   set("iterations", 1);
   set("type", "static");
   testPages.forEach(function(testPage) {
-    var doc = jsdom(testPage.source);
+    var doc = jsdom(testPage.source, {features: {ProcessExternalResources: false}});
     bench(testPage.dir + " perf", function() {
       declutter(doc.documentElement, doc).innerHTML;
     });
   });
 });
 
-// suite("Arc90 test page perf", function () {
-//   set("iterations", 1);
-//   set("type", "static");
-//   testPages.forEach(function(testPage) {
-//     var doc = jsdom(testPage.source);
-//     bench(testPage.dir + " perf", function() {
-//       Arc90Readability.init(doc.defaultView, doc);
-//     });
-//   });
-// });
+suite("Arc90 test page perf", function () {
+  set("iterations", 1);
+  set("type", "static");
+  testPages.forEach(function(testPage) {
+    var doc = jsdom(testPage.source, {features: {ProcessExternalResources: false}});
+    bench(testPage.dir + " perf", function() {
+      Arc90Readability.init(doc.defaultView, doc);
+    });
+  });
+});
 
-// suite("node-readability test page perf", function () {
-//   set("iterations", 1);
-//   set("type", "static");
-//   testPages.forEach(function(testPage) {
-//     var doc = jsdom(testPage.source);
-//     bench(testPage.dir + " perf", function() {
-//       new NodeReadability(doc.defaultView, {}).content;
-//     });
-//   });
-// });
+suite("node-readability test page perf", function () {
+  set("iterations", 1);
+  set("type", "static");
+  testPages.forEach(function(testPage) {
+    var doc = jsdom(testPage.source, {features: {ProcessExternalResources: false}});
+    bench(testPage.dir + " perf", function() {
+      new NodeReadability(doc.defaultView, {}).content;
+    });
+  });
+});
 
-// suite("Mozilla test page perf", function () {
-//   set("iterations", 1);
-//   set("type", "static");
+suite("Mozilla test page perf", function () {
+  set("iterations", 1);
+  set("type", "static");
 
-//   var uri = {
-//     spec: "http://fakehost/test/page.html",
-//     host: "fakehost",
-//     prePath: "http://fakehost",
-//     scheme: "http",
-//     pathBase: "http://fakehost/test"
-//   };
-//   testPages.forEach(function(testPage) {
-//     var doc = jsdom(testPage.source);
-//     bench(testPage.dir + " perf", function() {
-//       new MozillaReadability(uri, doc).parse();
-//     });
-//   });
-// });
+  var uri = {
+    spec: "http://fakehost/test/page.html",
+    host: "fakehost",
+    prePath: "http://fakehost",
+    scheme: "http",
+    pathBase: "http://fakehost/test"
+  };
+  testPages.forEach(function(testPage) {
+    var doc = jsdom(testPage.source, {features: {ProcessExternalResources: false}});
+    bench(testPage.dir + " perf", function() {
+      new MozillaReadability(uri, doc).parse();
+    });
+  });
+});

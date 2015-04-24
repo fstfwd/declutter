@@ -40,17 +40,17 @@ var doc;
 var result;
 
 // declutter
-doc = jsdom(testPage.source);
+doc = jsdom(testPage.source, {features: {ProcessExternalResources: false}});
 result = declutter(doc.documentElement, doc).innerHTML;
 fs.writeFileSync('1.html', result);
 
 // // arc90
-// doc = jsdom(testPage.source);
+// doc = jsdom(testPage.source, {features: {ProcessExternalResources: false}});
 // result = Arc90Readability.init(doc.defaultView, doc);
 // fs.writeFileSync('1.html', result);
 
 // // node-readability
-// doc = jsdom(testPage.source);
+// doc = jsdom(testPage.source, {features: {ProcessExternalResources: false}});
 // result = new NodeReadability(doc.defaultView, {}).content;
 // fs.writeFileSync('1.html', result);
 
@@ -62,6 +62,6 @@ fs.writeFileSync('1.html', result);
 //   scheme: "http",
 //   pathBase: "http://fakehost/test"
 // };
-// doc = jsdom(testPage.source);
+// doc = jsdom(testPage.source, {features: {ProcessExternalResources: false}});
 // result = new MozillaReadability(uri, doc).parse();
 // fs.writeFileSync('1.html', result.content);
