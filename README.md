@@ -26,6 +26,14 @@ $ mocha
 
 Test data came from [Mozilla Readability](https://github.com/mozilla/readability).
 
+## Benchmark
+
+```bash
+$ matcha
+```
+
+![Benchmark](https://raw.githubusercontent.com/ylian/declutter/master/benchmark/result.png)
+
 ## License
 
 Released under the MIT license.
