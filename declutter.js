@@ -19,6 +19,10 @@ var regexps = {
   extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i
 };
 
+function trim(str) {
+  return str.replace(/^\s+|\s+$/g, '');
+}
+
 function contentScoreForTagName(tagName) {
   var contentScore = 0;
   switch (tagName) {
@@ -81,7 +85,7 @@ function contentScoreForId(id) {
 
 
 /**
- * A Lightweight Node Object
+ * NodeRef: a lightweight object referencing a node
  */
 
 function NodeRef(node, type) {
@@ -143,17 +147,22 @@ function profile (msg) {
   start = t;
 }
 
-function declutter(page, doc) {
+function declutter(node, doc) {
   profileStart();
 
-  var nodeRef = cleanNode(page);
+  // First, traverse the node tree, construct a NodeRef object for every 
+  // node that we intend to keep, based on its content score.
+  // A content score measures how likely a node contains content. 
+  var nodeRef = cleanNode(node);
 
   profile('cleanNode');
 
+  // Find the NodeRef object with the highest content score
   var topCandidate = findTopCandidate(nodeRef);
   
   profile('find top candidate');
 
+  // Output topCandidate as a Node tree
   var articleContent = doc.createElement("DIV");
   articleContent.appendChild(topCandidate.cloneNode(doc));
 
@@ -164,14 +173,16 @@ function declutter(page, doc) {
 
 function cleanNode(node) {
   if (node.nodeType === 3) { // Text node
-    var innerText = node.nodeValue.replace(regexps.normalize, ' ').trim();
+    var text = trim(node.nodeValue);
+
+    // Ignore empty text nodes
+    if (text.length === 0) return null;
+
     var nodeRef = new NodeRef(node, 'text');
-    if (innerText.length > 0) {
-      nodeRef.contentScore = 1;
-      nodeRef.contentScore += Math.floor(innerText.length / 25);
-    } else {
-      return null;
-    }
+    
+    // A content score starts with a text node, then propagated up to other nodes.
+    nodeRef.contentScore = 1;
+    nodeRef.contentScore += Math.floor(text.length / 25);
     return nodeRef;
   } else if (node.nodeType === 1) { // Element node
     // Remove nodes that are unlikely candidates
