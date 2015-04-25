@@ -117,7 +117,7 @@ function NodeRef(node, type) {
   this.type = type;
   this.childNodes = [];
   this.parentNode = null;
-  this.textScore = 0;
+  this.contentScore = 0;
   this.isBlock = false;
 }
 
@@ -165,10 +165,10 @@ function cleanNode(node) {
     var innerText = node.nodeValue.replace(regexps.normalize, ' ').trim();
     var nodeRef = new NodeRef(node, 'text');
     if (innerText.length > 0) {
-      nodeRef.textScore = 0.2;
-      nodeRef.textScore += Math.floor(innerText.length / 25);
+      nodeRef.contentScore = 1;
+      nodeRef.contentScore += Math.floor(innerText.length / 25);
     } else {
-      nodeRef.textScore = 0;
+      nodeRef.contentScore = 0;
     }
     return nodeRef;
   } else if (node.nodeType === 1) { // Element node
@@ -196,10 +196,10 @@ function cleanNode(node) {
         if (childEl) {
           el.appendChild(childEl);
           if (childEl.node.tagName !== 'A') {
-            if (childEl.textScore > 0) {
-              el.textScore += childEl.textScore;
+            if (childEl.contentScore > 0) {
+              el.contentScore += childEl.contentScore;
             } else {
-              el.textScore -= 1;
+              el.contentScore -= 1;
             }
           }
         }
@@ -207,11 +207,11 @@ function cleanNode(node) {
 
       if (/^(DIV|P|PRE|FIGURE|FIGCAPTION|H1|H2)$/.test(tagName)) {
         el.isBlock = true;
-        el.textScore -= 1;
+        el.contentScore -= 1;
       } else if (tagName === 'UL' || tagName === 'OL' || tagName === 'LI') {
-        el.textScore -= 5;
+        el.contentScore -= 5;
       } else if (tagName === 'IMG') {
-        el.textScore += 10;
+        el.contentScore += 10;
       }
     }
     return el;
@@ -225,7 +225,7 @@ function prune(nodeRef) {
   var newChildNodes = [];
   for (var i=0, l=nodeRef.childNodes.length; i<l; i++) {
     var childNodeRef = nodeRef.childNodes[i];
-    if (!(childNodeRef.isBlock) || childNodeRef.textScore > 0) {
+    if (!(childNodeRef.isBlock) || childNodeRef.contentScore > 0) {
       newChildNodes.push(childNodeRef);
     }
   }
@@ -235,7 +235,7 @@ function prune(nodeRef) {
     prune(nodeRef.childNodes[i]);
   }
 
-  if (!topCandidate || nodeRef.textScore > topCandidate.textScore) {
+  if (!topCandidate || nodeRef.contentScore > topCandidate.contentScore) {
     topCandidate = nodeRef;
   }
 }
@@ -270,63 +270,6 @@ function declutter(page, doc) {
   profile('cloneNode');
 
   return articleContent;
-
-  // var candidates = [];
-  // for (var i=0, l=nodesToScore.length; i<l; i++) {
-  //     var parentNode = nodesToScore[i].parentNode;
-  //     var grandParentNode = parentNode ? parentNode.parentNode : null;
-  //     var innerText = getInnerText(nodesToScore[i].node);
-
-  //     if(!parentNode || typeof(parentNode.node.tagName) === 'undefined') {
-  //         continue;
-  //     }
-
-  //     /* If this paragraph is less than 25 characters, don't even count it. */
-  //     if (innerText.length < 25) continue;
-
-  //     /* Initialize readability data for the parent. */
-  //     if (typeof parentNode.readability === 'undefined') {
-  //         initializeNode(parentNode);
-  //         candidates.push(parentNode);
-  //     }
-
-  //     /* Initialize readability data for the grandparent. */
-  //     if (grandParentNode && typeof(grandParentNode.readability) === 'undefined' && typeof(grandParentNode.node.tagName) !== 'undefined') {
-  //         initializeNode(grandParentNode);
-  //         candidates.push(grandParentNode);
-  //     }
-      
-  //     /* Add the score to the parent. The grandparent gets half. */
-  //     parentNode.readability.contentScore += contentScore;
-
-  //     if(grandParentNode) {
-  //         grandParentNode.readability.contentScore += contentScore/2;             
-  //     }
-  // }
-
-  // profile('assign content scores');
-
-  // var topCandidate = null;
-  // for (var i=0, l=candidates.length; i<l; i++) {
-  //     /**
-  //      * Scale the final candidates score based on link density. Good content should have a
-  //      * relatively small link density (5% or less) and be mostly unaffected by this operation.
-  //     **/
-  //     candidates[i].readability.contentScore *= 1 - getLinkDensity(candidates[i].node);
-
-  //     //console.log('Candidate: ' + candidates[i] + " (" + candidates[i].node.className + ":" + candidates[i].node.id + ") with score " + candidates[i].readability.contentScore);
-
-  //     if (!topCandidate || candidates[i].readability.contentScore > topCandidate.readability.contentScore) {
-  //         topCandidate = candidates[i]; }
-  // }
-
-  // profile('find top candidate');
-
-  // var articleContent = doc.createElement("DIV");
-  // articleContent.appendChild(topCandidate.cloneNode(doc));
-
-  // profile('clone top candidate');
-  // return articleContent;
 }
 
 
