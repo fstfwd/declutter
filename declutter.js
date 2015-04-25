@@ -194,13 +194,13 @@ function cleanNode(node) {
       for (var i=0, l=childNodes.length; i<l; i++) {
         var childEl = cleanNode(childNodes[i]);
         if (childEl) {
-          el.appendChild(childEl);
-          if (childEl.node.tagName !== 'A') {
-            if (childEl.contentScore > 0) {
+          if (childEl.contentScore > 0) {
+            if (childEl.node.tagName !== 'A') {
               el.contentScore += childEl.contentScore;
-            } else {
-              el.contentScore -= 1;
             }
+            el.appendChild(childEl);
+          } else if (childEl.contentScore < -1) {
+            el.contentScore -= 1;
           }
         }
       }
@@ -208,8 +208,8 @@ function cleanNode(node) {
       if (/^(DIV|P|PRE|FIGURE|FIGCAPTION|H1|H2)$/.test(tagName)) {
         el.isBlock = true;
         el.contentScore -= 1;
-      } else if (tagName === 'UL' || tagName === 'OL' || tagName === 'LI') {
-        el.contentScore -= 5;
+      } else if (tagName === 'UL' || tagName === 'OL') {
+        el.contentScore -= 2;
       } else if (tagName === 'IMG') {
         el.contentScore += 10;
       }
@@ -219,25 +219,15 @@ function cleanNode(node) {
   return null;
 }
 
-var topCandidate = null;
-
-function prune(nodeRef) {
-  var newChildNodes = [];
+function findTopCandidate(nodeRef) {
+  var topCandidate = nodeRef;
   for (var i=0, l=nodeRef.childNodes.length; i<l; i++) {
-    var childNodeRef = nodeRef.childNodes[i];
-    if (!(childNodeRef.isBlock) || childNodeRef.contentScore > 0) {
-      newChildNodes.push(childNodeRef);
+    var c = findTopCandidate(nodeRef.childNodes[i]);
+    if (c.contentScore > topCandidate.contentScore) {
+      topCandidate = c;
     }
   }
-  nodeRef.childNodes = newChildNodes;
-
-  for (var i=0, l=nodeRef.childNodes.length; i<l; i++) {
-    prune(nodeRef.childNodes[i]);
-  }
-
-  if (!topCandidate || nodeRef.contentScore > topCandidate.contentScore) {
-    topCandidate = nodeRef;
-  }
+  return topCandidate;
 }
 
 var start = 0;
@@ -258,11 +248,9 @@ function declutter(page, doc) {
 
   profile('cleanNode');
 
-  topCandidate = null;
-
-  prune(nodeRef);
+  var topCandidate = findTopCandidate(nodeRef);
   
-  profile('prune nodeRef');
+  profile('find top candidate');
 
   var articleContent = doc.createElement("DIV");
   articleContent.appendChild(topCandidate.cloneNode(doc));
