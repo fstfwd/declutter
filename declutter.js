@@ -16,14 +16,7 @@ var regexps = {
   okMaybeItsACandidate: /and|article|body|column|main|shadow/i,
   positive: /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/i,
   negative: /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/i,
-  extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
-  divToPElements: /<(a|blockquote|dl|div|img|ol|p|pre|table|ul)/i,
-  replaceBrs: /(<br[^>]*>[ \n\r\t]*){2,}/gi,
-  replaceFonts: /<(\/?)font[^>]*>/gi,
-  trim: /^\s+|\s+$/g,
-  normalize: /\s{2,}/g,
-  killBreaks: /(<br\s*\/?>(\s|&nbsp;?)*){1,}/g,
-  videos: /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
+  extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i
 };
 
 function contentScoreForTagName(tagName) {
@@ -84,27 +77,6 @@ function contentScoreForId(id) {
     if (regexps.positive.test(id)) contentScore += 25;
   }
   return contentScore;
-}
-
-function initializeNode(node) {
-  node.readability = {"contentScore": 0};
-  node.readability.contentScore += contentScoreForTagName(node.tagName);
-  node.readability.contentScore += contentScoreForClassName(node.className);
-  node.readability.contentScore += contentScoreForId(node.id);
-}
-
-function getInnerText(node) {
-  return node.textContent;
-}
-
-function getLinkDensity(node) {
-  var links = node.getElementsByTagName('a');
-  var textLength = getInnerText(node).length;
-  var linkLength = 0;
-  for (var i=0, l=links.length; i<l; i++) {
-    linkLength += getInnerText(links[i]).length;
-  }
-  return linkLength / textLength;
 }
 
 
