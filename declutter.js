@@ -126,6 +126,13 @@ NodeRef.prototype.appendChild = function(child) {
   child.parentNode = this;
 }
 
+NodeRef.prototype.copy = function() {
+  var copy = new NodeRef(this.node, this.type);
+  copy.contentScore = this.contentScore;
+  copy.isBock = this.isBlock;
+  return copy;
+}
+
 NodeRef.prototype.cloneNode = function(doc) {
   var cloneNode = function(nodeRef, doc) {
     if (nodeRef.type === 'text') {
@@ -237,6 +244,23 @@ function prune(nodeRef) {
 
   if (!topCandidate || nodeRef.contentScore > topCandidate.contentScore) {
     topCandidate = nodeRef;
+  }
+}
+
+function unwrap(nodeRef) {
+  var copy = nodeRef.copy();
+  for (var i=0, l=nodeRef.childNodes.length; i<l; i++) {
+    var childCopy = unwrap(nodeRef.childNodes[i]);
+    if (childCopy) copy.appendChild(childCopy);
+  }
+
+  var len = copy.childNodes.length;
+  if (len > 1) {
+    return copy;
+  } else if (len === 1) {
+    return copy.childNodes[0];
+  } else {
+    return null;
   }
 }
 
