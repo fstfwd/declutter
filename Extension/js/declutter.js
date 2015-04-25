@@ -179,6 +179,13 @@ function cleanNode(node) {
     var tagName = node.tagName;
     if (/^(head|script|style|meta|link|object|form)$/i.test(tagName)) return null;
 
+    if (tagName === 'IMG') {
+      var src = node.getAttribute('src') || '';
+      if (src.trim().length === 0 || /data:image/.test(src)) {
+        return null;
+      }
+    }
+
     // Create a NodeRef
     var el = new NodeRef(node, 'element');
 
