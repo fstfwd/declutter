@@ -132,6 +132,36 @@ NodeRef.prototype.cloneNode = function(doc) {
  * Declutter
  */
 
+var start = 0;
+function profileStart() {
+  start = Date.now();
+}
+
+function profile (msg) {
+  var t = Date.now();
+  console.log(msg + ': ' + (t - start) + 'ms');
+  start = t;
+}
+
+function declutter(page, doc) {
+  profileStart();
+
+  var nodeRef = cleanNode(page);
+
+  profile('cleanNode');
+
+  var topCandidate = findTopCandidate(nodeRef);
+  
+  profile('find top candidate');
+
+  var articleContent = doc.createElement("DIV");
+  articleContent.appendChild(topCandidate.cloneNode(doc));
+
+  profile('cloneNode');
+
+  return articleContent;
+}
+
 function cleanNode(node) {
   if (node.nodeType === 3) { // Text node
     var innerText = node.nodeValue.replace(regexps.normalize, ' ').trim();
@@ -140,7 +170,7 @@ function cleanNode(node) {
       nodeRef.contentScore = 1;
       nodeRef.contentScore += Math.floor(innerText.length / 25);
     } else {
-      nodeRef.contentScore = 0;
+      return null;
     }
     return nodeRef;
   } else if (node.nodeType === 1) { // Element node
@@ -171,8 +201,8 @@ function cleanNode(node) {
               el.contentScore += childEl.contentScore;
             }
             el.appendChild(childEl);
-          } else if (childEl.contentScore < -1) {
-            el.contentScore -= 1;
+          } else {
+            el.contentScore -= 5;
           }
         }
       }
@@ -200,36 +230,6 @@ function findTopCandidate(nodeRef) {
     }
   }
   return topCandidate;
-}
-
-var start = 0;
-function profileStart() {
-  start = Date.now();
-}
-
-function profile (msg) {
-  var t = Date.now();
-  console.log(msg + ': ' + (t - start) + 'ms');
-  start = t;
-}
-
-function declutter(page, doc) {
-  profileStart();
-
-  var nodeRef = cleanNode(page);
-
-  profile('cleanNode');
-
-  var topCandidate = findTopCandidate(nodeRef);
-  
-  profile('find top candidate');
-
-  var articleContent = doc.createElement("DIV");
-  articleContent.appendChild(topCandidate.cloneNode(doc));
-
-  profile('cloneNode');
-
-  return articleContent;
 }
 
 
