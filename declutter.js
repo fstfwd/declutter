@@ -177,7 +177,14 @@ function cleanNode(node) {
     if (regexps.unlikelyCandidates.test(unlikelyMatchString) && !regexps.okMaybeItsACandidate.test(unlikelyMatchString)) return null;
 
     var tagName = node.tagName;
-    if (/^(head|script|style|meta|link|object|form)$/i.test(tagName)) return null;
+    if (/^(head|script|noscript|style|meta|link|object|form|textarea)$/i.test(tagName)) return null;
+
+    if (tagName === 'IMG') {
+      var src = node.getAttribute('src') || '';
+      if (src.trim().length === 0 || /data:image/.test(src)) {
+        return null;
+      }
+    }
 
     // Create a NodeRef
     var el = new NodeRef(node, 'element');
@@ -189,7 +196,11 @@ function cleanNode(node) {
         if (childEl) {
           el.appendChild(childEl);
           if (childEl.node.tagName !== 'A') {
-            el.textScore += childEl.textScore;
+            if (childEl.textScore > 0) {
+              el.textScore += childEl.textScore;
+            } else {
+              el.textScore -= 1;
+            }
           }
         }
       }
@@ -197,6 +208,8 @@ function cleanNode(node) {
       if (/^(DIV|P|PRE|FIGURE|FIGCAPTION|H1|H2)$/.test(tagName)) {
         el.isBlock = true;
         el.textScore -= 1;
+      } else if (tagName === 'UL' || tagName === 'OL' || tagName === 'LI') {
+        el.textScore -= 5;
       } else if (tagName === 'IMG') {
         el.textScore += 10;
       }
