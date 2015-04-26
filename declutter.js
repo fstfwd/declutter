@@ -140,6 +140,15 @@ NodeRef.prototype.cloneNode = function(doc) {
 
 
 /**
+ * Score
+ */
+
+function Score(value) {
+  this.value = value;
+}
+
+
+/**
  * Declutter
  */
 
@@ -173,7 +182,7 @@ function cleanNode(node) {
     var text = node.nodeValue;
 
     // Ignore empty text nodes
-    if (trim(text).length === 0) return null;
+    if (trim(text).length === 0) return new Score(0);
 
     // Collpase whitespaces, but don't trim spaces at two ends
     text = text.replace(/\s+/g, ' ');
@@ -185,47 +194,39 @@ function cleanNode(node) {
     ref.contentScore = Math.floor(text.length / 25);
     return ref;
   } else if (node.nodeType === 1) { // Element node
-    // Ignore nodes that are unlikely to be main content
+    // Ignore nodes that are unlikely to be main content and penalize the parent.
     var matchString = node.className + ' ' + node.id;
-    if (regexps.unlikelyCandidates.test(matchString) && !regexps.okMaybeItsACandidate.test(matchString)) return null;
+    if (regexps.unlikelyCandidates.test(matchString) && !regexps.okMaybeItsACandidate.test(matchString)) return new Score(-1);
 
-    // Ignore nodes with certain tag names
+    // Ignore nodes with certain tag names and penalize the parent.
     var tagName = node.tagName.toLowerCase();
-    if (tagsToIgnore.indexOf(tagName) !== -1) return null;
+    if (tagsToIgnore.indexOf(tagName) !== -1) return new Score(-1);
 
     // Create a NodeRef object
     var ref = new NodeRef(node, 'element');
-    //ref.isBlock = regexps.block.test(tagName);
 
     // Clean child nodes
     for (var i=0, l=node.childNodes.length; i<l; i++) {
-      var childRef = cleanNode(node.childNodes[i]);
-      if (childRef) {
-        ref.appendChild(childRef);
-        ref.contentScore += childRef.contentScore;
-
-        // if (childRef.isBlock) {
-        //   if (childRef.contentScore > 0) {
-        //     // Only append a childRef if it has a good content score
-        //     ref.appendChild(childRef);
-        //   } else {
-        //     // Penalize the node if a childRef has a bad content score
-        //     ref.contentScore -= 5;
-        //   }
-        // } else {
-        //   // Inline elements and text nodes should always be appended
-        //   ref.appendChild(childRef);
-        // }
+      var c = cleanNode(node.childNodes[i]);
+      if (c instanceof Score) {
+        ref.contentScore += c.value;
+      } else {
+        ref.appendChild(c);
+        ref.contentScore += c.contentScore;
       }
     }
 
-    // Tags, classNames, ids also contribute to the content score
-    //ref.contentScore += contentScoreForTagName(tagName);
+    // If a node is empty or has a negative content score, send a penalty to
+    // the parent node.
+    if (ref.childNodes.length === 0 || ref.contentScore < 0) {
+      return new Score(-1);
+    }
+
     return ref;
   }
 
-  // Ignore other node types (comment, etc.)
-  return null;
+  // Ignore other node types such as comments. No penalty to the parent node.
+  return new Score(0);
 }
 
 function findTopCandidate(nodeRef) {
