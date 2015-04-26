@@ -185,9 +185,9 @@ function cleanNode(node) {
     ref.contentScore = Math.floor(text.length / 25);
     return ref;
   } else if (node.nodeType === 1) { // Element node
-    // // Remove nodes that are unlikely to be main content
-    // var matchString = node.className + ' ' + node.id;
-    // if (regexps.unlikelyCandidates.test(matchString) && !regexps.okMaybeItsACandidate.test(matchString)) return null;
+    // Ignore nodes that are unlikely to be main content
+    var matchString = node.className + ' ' + node.id;
+    if (regexps.unlikelyCandidates.test(matchString) && !regexps.okMaybeItsACandidate.test(matchString)) return null;
 
     // Ignore nodes with certain tag names
     var tagName = node.tagName.toLowerCase();
