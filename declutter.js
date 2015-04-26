@@ -170,7 +170,7 @@ function cleanNode(node) {
     var text = node.nodeValue;
 
     // Ignore empty text nodes
-    //if (trim(text).length === 0) return null;
+    if (trim(text).length === 0) return null;
 
     // Collpase whitespaces, but don't trim spaces at two ends
     //text = text.replace(/\s+/g, ' ');
@@ -180,7 +180,6 @@ function cleanNode(node) {
 
     // Assign a content score based on character count
     //ref.contentScore = Math.floor(text.length / 25);
-
     return ref;
   } else if (node.nodeType === 1) { // Element node
     // // Remove nodes that are unlikely to be main content
