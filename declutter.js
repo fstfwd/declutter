@@ -87,6 +87,17 @@ function contentScoreForId(id) {
   return contentScore;
 }
 
+function keepEmptyTag(tagName, node) {
+  if (tagName === 'br') return true;
+  if (tagName === 'img') {
+    var src = node.getAttribute('src') || '';
+    if (trim(src).length > 0 && !/data:image/.test(src)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 
 /**
  * NodeRef: a lightweight object referencing a node
@@ -158,6 +169,8 @@ function profile (msg) {
 function declutter(node, doc) {
   // First, traverse the node tree, construct a NodeRef object for each node
   // and assign it a content score.
+  // A content score measures how likely a node contains content. It is based on
+  // several factors: word count, link density, tagName, className, id, etc.
   var nodeRef = rankNode(node);
 
   // Find the NodeRef object with the highest content score
@@ -214,7 +227,7 @@ function rankNode(node) {
     }
 
     // If a node is empty or has a negative content score, set its score to -1.
-    if ((ref.childNodes.length === 0 && !regexps.emptyTagsToKeep.test(tagName)) || ref.contentScore < 0) {
+    if ((ref.childNodes.length === 0 && !keepEmptyTag(tagName, node)) || ref.contentScore < 0) {
       ref.contentScore = -1;
     }
     return ref;
