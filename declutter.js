@@ -20,7 +20,7 @@ var regexps = {
   block: /^(p|div)$/i,
 };
 
-var tagsToIgnore = ['head','script','noscript','style','meta','link','object','form','textarea','header','footer','nav','iframe'];
+var tagsToIgnore = ['head','script','noscript','style','meta','link','object','form','textarea','header','footer','nav','iframe','h1'];
 
 function trim(str) {
   return str.replace(/^\s+|\s+$/g, '');
