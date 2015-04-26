@@ -173,7 +173,7 @@ function cleanNode(node) {
     if (trim(text).length === 0) return null;
 
     // Collpase whitespaces, but don't trim spaces at two ends
-    //text = text.replace(/\s+/g, ' ');
+    text = text.replace(/\s+/g, ' ');
 
     // Cache the clean text in a NodeRef object
     var ref = new NodeRef(node, 'text', text);
