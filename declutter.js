@@ -139,15 +139,6 @@ NodeRef.prototype.cloneNode = function(doc) {
 
 
 /**
- * Score
- */
-
-function Score(value) {
-  this.value = value;
-}
-
-
-/**
  * Declutter
  */
 
@@ -168,11 +159,11 @@ function declutter(node, doc) {
   var nodeRef = cleanNode(node);
 
   // Find the NodeRef object with the highest content score
-  //var topCandidate = findTopCandidate(nodeRef);
+  var topCandidate = findTopCandidate(nodeRef);
 
   // Output topCandidate as a Node tree
   var articleContent = doc.createElement("DIV");
-  articleContent.appendChild(nodeRef.cloneNode(doc));
+  articleContent.appendChild(topCandidate.cloneNode(doc));
   return articleContent;
 }
 
@@ -181,7 +172,7 @@ function cleanNode(node) {
     var text = node.nodeValue;
 
     // Ignore empty text nodes
-    if (trim(text).length === 0) return new Score(0);
+    if (trim(text).length === 0) return null;
 
     // Collpase whitespaces, but don't trim spaces at two ends
     text = text.replace(/\s+/g, ' ');
@@ -193,38 +184,35 @@ function cleanNode(node) {
     ref.contentScore = Math.floor(text.length / 25);
     return ref;
   } else if (node.nodeType === 1) { // Element node
-    // Ignore nodes that are unlikely to be main content and penalize the parent.
+    // Ignore nodes that are unlikely to be main content
     var matchString = node.className + ' ' + node.id;
-    if (regexps.unlikelyCandidates.test(matchString) && !regexps.okMaybeItsACandidate.test(matchString)) return new Score(-1);
+    if (regexps.unlikelyCandidates.test(matchString) && !regexps.okMaybeItsACandidate.test(matchString)) return null;
 
-    // Ignore nodes with certain tag names and penalize the parent.
+    // Ignore nodes with certain tag names
     var tagName = node.tagName.toLowerCase();
-    if (tagsToIgnore.indexOf(tagName) !== -1) return new Score(-1);
+    if (tagsToIgnore.indexOf(tagName) !== -1) return null;
 
     // Create a NodeRef object
     var ref = new NodeRef(node, 'element');
 
     // Clean child nodes
     for (var i=0, l=node.childNodes.length; i<l; i++) {
-      var c = cleanNode(node.childNodes[i]);
-      if (c instanceof Score) {
-        ref.contentScore += c.value;
-      } else {
-        ref.appendChild(c);
-        ref.contentScore += c.contentScore;
+      var childRef = cleanNode(node.childNodes[i]);
+      if (childRef) {
+        ref.appendChild(childRef);
+        ref.contentScore += childRef.contentScore;
       }
     }
 
-    // If a node is empty or has a negative content score, send a penalty to
-    // the parent node.
-    if ((ref.childNodes.length === 0 && tagName !== 'img') || ref.contentScore < 0)
-      return new Score(-1);
-
+    // If a node is empty or has a negative content score, set its score to -1.
+    if ((ref.childNodes.length === 0 && tagName !== 'img') || ref.contentScore < 0) {
+      ref.contentScore = -1;
+    }
     return ref;
   }
 
-  // Ignore other node types such as comments. No penalty to the parent node.
-  return new Score(0);
+  // Ignore other node types (comments, etc.)
+  return null;
 }
 
 function findTopCandidate(nodeRef) {
