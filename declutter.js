@@ -16,8 +16,7 @@ var regexps = {
   okMaybeItsACandidate: /and|article|body|column|main|shadow/i,
   positive: /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/i,
   negative: /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/i,
-  extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
-  block: /^(p|div)$/i,
+  extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i
 };
 
 var tagsToIgnore = ['head','script','noscript','style','meta','link','object','form','textarea','header','footer','nav','iframe','h1'];
@@ -218,9 +217,8 @@ function cleanNode(node) {
 
     // If a node is empty or has a negative content score, send a penalty to
     // the parent node.
-    if (ref.childNodes.length === 0 || ref.contentScore < 0) {
+    if ((ref.childNodes.length === 0 && tagName !== 'img') || ref.contentScore < 0)
       return new Score(-1);
-    }
 
     return ref;
   }
