@@ -16,7 +16,8 @@ var regexps = {
   okMaybeItsACandidate: /and|article|body|column|main|shadow/i,
   positive: /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/i,
   negative: /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/i,
-  extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i
+  extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
+  block: /^(p|div)$/i,
 };
 
 var tagsToIgnore = ['head', 'script', 'noscript', 'style', 'meta', 'link', 'object', 'form', 'textarea'];
@@ -28,39 +29,39 @@ function trim(str) {
 function contentScoreForTagName(tagName) {
   var contentScore = 0;
   switch (tagName) {
-    case 'MAIN':
-    case 'ARTICLE':
+    case 'main':
+    case 'article':
       contentScore += 10;
       break;
-    case 'SECTION':
+    case 'section':
       contentScore += 8;
       break;
-    case 'P':
-    case 'DIV':
+    case 'p':
+    case 'div':
       contentScore += 5;
       break;
-    case 'PRE':
-    case 'TD':
-    case 'BLOCKQUOTE':
+    case 'pre':
+    case 'td':
+    case 'blockquote':
       contentScore += 3;
       break;
-    case 'ADDRESS':
-    case 'OL':
-    case 'UL':
-    case 'DL':
-    case 'DD':
-    case 'DT':
-    case 'LI':
-    case 'FORM':
+    case 'address':
+    case 'ol':
+    case 'ul':
+    case 'dl':
+    case 'dd':
+    case 'dt':
+    case 'li':
+    case 'form':
       contentScore -= 3;
       break;
-    case 'H1':
-    case 'H2':
-    case 'H3':
-    case 'H4':
-    case 'H5':
-    case 'H6':
-    case 'TH':
+    case 'h1':
+    case 'h2':
+    case 'h3':
+    case 'h4':
+    case 'h5':
+    case 'h6':
+    case 'th':
       contentScore -= 5;
       break;
   }
@@ -199,21 +200,27 @@ function cleanNode(node) {
 
     // Ignore nodes with certain tag names
     var tagName = node.tagName.toLowerCase();
-    if (tagNamesToIgnore.indexOf(tagName) !== -1) return null;
+    if (tagsToIgnore.indexOf(tagName) !== -1) return null;
 
     // Create a NodeRef object
     var ref = new NodeRef(node, 'element');
+    ref.isBlock = regexps.block.test(tagName);
 
     // Clean child nodes
     for (var i=0, l=node.childNodes.length; i<l; i++) {
       var childRef = cleanNode(node.childNodes[i]);
       if (childRef) {
-        if (childRef.contentScore > 0) {
-          // Only append a childRef if it has a good content score
-          ref.appendChild(childRef);
+        if (childRef.isBlock) {
+          if (childRef.contentScore > 0) {
+            // Only append a childRef if it has a good content score
+            ref.appendChild(childRef);
+          } else {
+            // Penalize the node if a childRef has a bad content score
+            ref.contentScore -= 5;
+          }
         } else {
-          // Penalize the node if a childRef has a bad content score
-          ref.contentScore -= 5;
+          // Inline elements and text nodes should always be appended
+          ref.appendChild(childRef);
         }
       }
     }
