@@ -120,6 +120,9 @@ NodeRef.prototype.cloneNode = function(doc) {
         el.setAttribute('alt', nodeRef.node.getAttribute('alt') || '');
       }
 
+      // Output contentScore for debugging
+      el.setAttribute('contentScore', nodeRef.contentScore);
+
       if (tagName === 'PRE') {
         el.innerHTML = nodeRef.node.textContent;
       } else {
@@ -179,7 +182,7 @@ function cleanNode(node) {
     var ref = new NodeRef(node, 'text', text);
 
     // Assign a content score based on character count
-    //ref.contentScore = Math.floor(text.length / 25);
+    ref.contentScore = Math.floor(text.length / 25);
     return ref;
   } else if (node.nodeType === 1) { // Element node
     // // Remove nodes that are unlikely to be main content
@@ -199,6 +202,7 @@ function cleanNode(node) {
       var childRef = cleanNode(node.childNodes[i]);
       if (childRef) {
         ref.appendChild(childRef);
+        ref.contentScore += childRef.contentScore;
 
         // if (childRef.isBlock) {
         //   if (childRef.contentScore > 0) {
