@@ -19,6 +19,8 @@ var regexps = {
   extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i
 };
 
+var tagsToIgnore = ['head', 'script', 'noscript', 'style', 'meta', 'link', 'object', 'form', 'textarea'];
+
 function trim(str) {
   return str.replace(/^\s+|\s+$/g, '');
 }
@@ -88,9 +90,10 @@ function contentScoreForId(id) {
  * NodeRef: a lightweight object referencing a node
  */
 
-function NodeRef(node, type) {
+function NodeRef(node, type, text) {
   this.node = node;
   this.type = type;
+  this.text = text;
   this.childNodes = [];
   this.parentNode = null;
   this.contentScore = 0;
@@ -105,7 +108,7 @@ NodeRef.prototype.appendChild = function(child) {
 NodeRef.prototype.cloneNode = function(doc) {
   var cloneNode = function(nodeRef, doc) {
     if (nodeRef.type === 'text') {
-      return doc.createTextNode(nodeRef.node.nodeValue);
+      return doc.createTextNode(nodeRef.text);
     } else if (nodeRef.type === 'element') {
       var tagName = nodeRef.node.tagName;
       var el = doc.createElement(tagName);
@@ -150,9 +153,10 @@ function profile (msg) {
 function declutter(node, doc) {
   profileStart();
 
-  // First, traverse the node tree, construct a NodeRef object for every 
-  // node that we intend to keep, based on its content score.
-  // A content score measures how likely a node contains content. 
+  // First, traverse the node tree, construct a NodeRef object for each node
+  // that we intend to keep, based on its content score.
+  // A content score measures how likely a node contains main content. It is 
+  // based on several factors: word count, link density, tagName, className, etc.
   var nodeRef = cleanNode(node);
 
   profile('cleanNode');
@@ -173,62 +177,53 @@ function declutter(node, doc) {
 
 function cleanNode(node) {
   if (node.nodeType === 3) { // Text node
-    var text = trim(node.nodeValue);
+    var text = node.nodeValue;
 
     // Ignore empty text nodes
-    if (text.length === 0) return null;
+    if (trim(text).length === 0) return null;
 
-    var nodeRef = new NodeRef(node, 'text');
-    
-    // A content score starts with a text node, then propagated up to other nodes.
-    nodeRef.contentScore = 1;
-    nodeRef.contentScore += Math.floor(text.length / 25);
-    return nodeRef;
+    // Collpase whitespaces, but don't trim spaces at two ends
+    text = text.replace(/\s+/g, ' ');
+
+    // Cache the clean text in a NodeRef object
+    var ref = new NodeRef(node, 'text', text);
+
+    // Assign a content score based on character count
+    ref.contentScore = Math.floor(text.length / 25);
+
+    return ref;
   } else if (node.nodeType === 1) { // Element node
-    // Remove nodes that are unlikely candidates
-    var unlikelyMatchString = node.className + ' ' + node.id;
-    if (regexps.unlikelyCandidates.test(unlikelyMatchString) && !regexps.okMaybeItsACandidate.test(unlikelyMatchString)) return null;
+    // Remove nodes that are unlikely to be main content
+    var matchString = node.className + ' ' + node.id;
+    if (regexps.unlikelyCandidates.test(matchString) && !regexps.okMaybeItsACandidate.test(matchString)) return null;
 
-    var tagName = node.tagName;
-    if (/^(head|script|noscript|style|meta|link|object|form|textarea)$/i.test(tagName)) return null;
+    // Ignore nodes with certain tag names
+    var tagName = node.tagName.toLowerCase();
+    if (tagNamesToIgnore.indexOf(tagName) !== -1) return null;
 
-    if (tagName === 'IMG') {
-      var src = node.getAttribute('src') || '';
-      if (src.trim().length === 0 || /data:image/.test(src)) {
-        return null;
-      }
-    }
+    // Create a NodeRef object
+    var ref = new NodeRef(node, 'element');
 
-    // Create a NodeRef
-    var el = new NodeRef(node, 'element');
-
-    if (tagName !== 'PRE') {
-      var childNodes = node.childNodes;
-      for (var i=0, l=childNodes.length; i<l; i++) {
-        var childEl = cleanNode(childNodes[i]);
-        if (childEl) {
-          if (childEl.contentScore > 0) {
-            if (childEl.node.tagName !== 'A') {
-              el.contentScore += childEl.contentScore;
-            }
-            el.appendChild(childEl);
-          } else {
-            el.contentScore -= 5;
-          }
+    // Clean child nodes
+    for (var i=0, l=node.childNodes.length; i<l; i++) {
+      var childRef = cleanNode(node.childNodes[i]);
+      if (childRef) {
+        if (childRef.contentScore > 0) {
+          // Only append a childRef if it has a good content score
+          ref.appendChild(childRef);
+        } else {
+          // Penalize the node if a childRef has a bad content score
+          ref.contentScore -= 5;
         }
       }
-
-      if (/^(DIV|P|PRE|FIGURE|FIGCAPTION|H1|H2)$/.test(tagName)) {
-        el.isBlock = true;
-        el.contentScore -= 1;
-      } else if (tagName === 'UL' || tagName === 'OL') {
-        el.contentScore -= 2;
-      } else if (tagName === 'IMG') {
-        el.contentScore += 10;
-      }
     }
-    return el;
+
+    // Tags, classNames, ids also contribute to the content score
+    ref.contentScore += contentScoreForTagName(tagName);
+    return ref;
   }
+
+  // Ignore other node types (comment, etc.)
   return null;
 }
 
