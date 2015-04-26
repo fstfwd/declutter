@@ -1,6 +1,7 @@
 var path = require("path");
 var fs = require("fs");
 var jsdom = require("jsdom").jsdom;
+var prettyPrint = require("html").prettyPrint;
 var declutter = require("./declutter");
 var Arc90Readability = require('./benchmark/arc90/readability');
 var NodeReadability = require('./benchmark/node-readability/readability');
@@ -42,7 +43,8 @@ var result;
 // declutter
 doc = jsdom(testPage.source, {features: {ProcessExternalResources: false}});
 result = declutter(doc.documentElement, doc).innerHTML;
-fs.writeFileSync('1.html', result);
+//fs.writeFileSync('1.html', result);
+fs.writeFileSync('1.html', prettyPrint(result));
 
 // // arc90
 // doc = jsdom(testPage.source, {features: {ProcessExternalResources: false}});
