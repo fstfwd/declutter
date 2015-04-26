@@ -17,6 +17,7 @@ var regexps = {
   positive: /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/i,
   negative: /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/i,
   extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
+  emptyTagsToKeep: /^(img|br)$/i, 
   block: /^(p|div)$/i
 };
 
@@ -213,7 +214,7 @@ function rankNode(node) {
     }
 
     // If a node is empty or has a negative content score, set its score to -1.
-    if ((ref.childNodes.length === 0 && tagName !== 'img' && tagName !== 'br') || ref.contentScore < 0) {
+    if ((ref.childNodes.length === 0 && !regexps.emptyTagsToKeep.test(tagName)) || ref.contentScore < 0) {
       ref.contentScore = -1;
     }
     return ref;
