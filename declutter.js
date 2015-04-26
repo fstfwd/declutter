@@ -20,7 +20,7 @@ var regexps = {
   block: /^(p|div)$/i,
 };
 
-var tagsToIgnore = ['head', 'script', 'noscript', 'style', 'meta', 'link', 'object', 'form', 'textarea'];
+var tagsToIgnore = ['head','script','noscript','style','meta','link','object','form','textarea','header','footer','nav','iframe'];
 
 function trim(str) {
   return str.replace(/^\s+|\s+$/g, '');
@@ -152,27 +152,16 @@ function profile (msg) {
 }
 
 function declutter(node, doc) {
-  profileStart();
-
   // First, traverse the node tree, construct a NodeRef object for each node
-  // that we intend to keep, based on its content score.
-  // A content score measures how likely a node contains main content. It is 
-  // based on several factors: word count, link density, tagName, className, etc.
+  // that we intend to keep.
   var nodeRef = cleanNode(node);
 
-  profile('cleanNode');
-
   // Find the NodeRef object with the highest content score
-  var topCandidate = findTopCandidate(nodeRef);
-  
-  profile('find top candidate');
+  //var topCandidate = findTopCandidate(nodeRef);
 
   // Output topCandidate as a Node tree
   var articleContent = doc.createElement("DIV");
-  articleContent.appendChild(topCandidate.cloneNode(doc));
-
-  profile('cloneNode');
-
+  articleContent.appendChild(nodeRef.cloneNode(doc));
   return articleContent;
 }
 
@@ -181,22 +170,22 @@ function cleanNode(node) {
     var text = node.nodeValue;
 
     // Ignore empty text nodes
-    if (trim(text).length === 0) return null;
+    //if (trim(text).length === 0) return null;
 
     // Collpase whitespaces, but don't trim spaces at two ends
-    text = text.replace(/\s+/g, ' ');
+    //text = text.replace(/\s+/g, ' ');
 
     // Cache the clean text in a NodeRef object
     var ref = new NodeRef(node, 'text', text);
 
     // Assign a content score based on character count
-    ref.contentScore = Math.floor(text.length / 25);
+    //ref.contentScore = Math.floor(text.length / 25);
 
     return ref;
   } else if (node.nodeType === 1) { // Element node
-    // Remove nodes that are unlikely to be main content
-    var matchString = node.className + ' ' + node.id;
-    if (regexps.unlikelyCandidates.test(matchString) && !regexps.okMaybeItsACandidate.test(matchString)) return null;
+    // // Remove nodes that are unlikely to be main content
+    // var matchString = node.className + ' ' + node.id;
+    // if (regexps.unlikelyCandidates.test(matchString) && !regexps.okMaybeItsACandidate.test(matchString)) return null;
 
     // Ignore nodes with certain tag names
     var tagName = node.tagName.toLowerCase();
@@ -204,29 +193,31 @@ function cleanNode(node) {
 
     // Create a NodeRef object
     var ref = new NodeRef(node, 'element');
-    ref.isBlock = regexps.block.test(tagName);
+    //ref.isBlock = regexps.block.test(tagName);
 
     // Clean child nodes
     for (var i=0, l=node.childNodes.length; i<l; i++) {
       var childRef = cleanNode(node.childNodes[i]);
       if (childRef) {
-        if (childRef.isBlock) {
-          if (childRef.contentScore > 0) {
-            // Only append a childRef if it has a good content score
-            ref.appendChild(childRef);
-          } else {
-            // Penalize the node if a childRef has a bad content score
-            ref.contentScore -= 5;
-          }
-        } else {
-          // Inline elements and text nodes should always be appended
-          ref.appendChild(childRef);
-        }
+        ref.appendChild(childRef);
+
+        // if (childRef.isBlock) {
+        //   if (childRef.contentScore > 0) {
+        //     // Only append a childRef if it has a good content score
+        //     ref.appendChild(childRef);
+        //   } else {
+        //     // Penalize the node if a childRef has a bad content score
+        //     ref.contentScore -= 5;
+        //   }
+        // } else {
+        //   // Inline elements and text nodes should always be appended
+        //   ref.appendChild(childRef);
+        // }
       }
     }
 
     // Tags, classNames, ids also contribute to the content score
-    ref.contentScore += contentScoreForTagName(tagName);
+    //ref.contentScore += contentScoreForTagName(tagName);
     return ref;
   }
 
