@@ -16,7 +16,8 @@ var regexps = {
   okMaybeItsACandidate: /and|article|body|column|main|shadow/i,
   positive: /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/i,
   negative: /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/i,
-  extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i
+  extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
+  block: /^(p|div)$/i
 };
 
 var tagsToIgnore = ['head','script','noscript','style','meta','link','object','form','textarea','header','footer','nav','iframe','h1'];
@@ -163,7 +164,7 @@ function declutter(node, doc) {
 
   // Output topCandidate as a Node tree
   var articleContent = doc.createElement("DIV");
-  articleContent.appendChild(topCandidate.cloneNode(doc));
+  articleContent.appendChild(prune(topCandidate).cloneNode(doc));
   return articleContent;
 }
 
@@ -194,18 +195,25 @@ function cleanNode(node) {
 
     // Create a NodeRef object
     var ref = new NodeRef(node, 'element');
+    ref.isBlock = regexps.block.test(tagName);
 
     // Clean child nodes
     for (var i=0, l=node.childNodes.length; i<l; i++) {
       var childRef = cleanNode(node.childNodes[i]);
       if (childRef) {
         ref.appendChild(childRef);
-        ref.contentScore += childRef.contentScore;
+        
+        if (ref.isBlock) {
+          // Content score decays when it encounters a block element
+          ref.contentScore += childRef.contentScore * 0.5;
+        } else {
+          ref.contentScore += childRef.contentScore;
+        }
       }
     }
 
     // If a node is empty or has a negative content score, set its score to -1.
-    if ((ref.childNodes.length === 0 && tagName !== 'img') || ref.contentScore < 0) {
+    if ((ref.childNodes.length === 0 && tagName !== 'img' && tagName !== 'br') || ref.contentScore < 0) {
       ref.contentScore = -1;
     }
     return ref;
@@ -224,6 +232,21 @@ function findTopCandidate(nodeRef) {
     }
   }
   return topCandidate;
+}
+
+function prune(nodeRef) {
+  // Traverse backwards so deleting an item doesn't affect the traversal
+  for (var i=nodeRef.childNodes.length-1; i>=0; i--) {
+    if (nodeRef.childNodes[i].contentScore < 0) {
+      nodeRef.childNodes.splice(i, 1);
+    }
+  }
+
+  for (var i=0, l=nodeRef.childNodes.length; i<l; i++) {
+    prune(nodeRef.childNodes[i]);
+  }
+
+  return nodeRef;
 }
 
 
