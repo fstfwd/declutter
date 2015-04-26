@@ -156,8 +156,8 @@ function profile (msg) {
 
 function declutter(node, doc) {
   // First, traverse the node tree, construct a NodeRef object for each node
-  // that we intend to keep.
-  var nodeRef = cleanNode(node);
+  // and assign it a content score.
+  var nodeRef = rankNode(node);
 
   // Find the NodeRef object with the highest content score
   var topCandidate = findTopCandidate(nodeRef);
@@ -168,7 +168,7 @@ function declutter(node, doc) {
   return articleContent;
 }
 
-function cleanNode(node) {
+function rankNode(node) {
   if (node.nodeType === 3) { // Text node
     var text = node.nodeValue;
 
@@ -199,7 +199,7 @@ function cleanNode(node) {
 
     // Clean child nodes
     for (var i=0, l=node.childNodes.length; i<l; i++) {
-      var childRef = cleanNode(node.childNodes[i]);
+      var childRef = rankNode(node.childNodes[i]);
       if (childRef) {
         ref.appendChild(childRef);
         
