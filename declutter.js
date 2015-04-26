@@ -18,7 +18,7 @@ var regexps = {
   negative: /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/i,
   extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
   emptyTagsToKeep: /^(img|br)$/i, 
-  block: /^(p|div)$/i
+  block: /^(p|div|article|section)$/i
 };
 
 var tagsToIgnore = ['head','script','noscript','style','meta','link','object','form','textarea','header','footer','nav','iframe','h1'];
