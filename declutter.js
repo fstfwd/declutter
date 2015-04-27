@@ -21,7 +21,7 @@ var regexps = {
   block: /^(p|div|article|section)$/i
 };
 
-var tagsToIgnore = ['head','script','noscript','style','meta','link','object','form','textarea','header','footer','nav','iframe','h1'];
+var tagsToIgnore = ['head','script','noscript','style','meta','link','object','form','textarea','header','footer','nav','iframe','h1','hr'];
 
 function trim(str) {
   return str.replace(/^\s+|\s+$/g, '');
