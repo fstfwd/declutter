@@ -1,6 +1,8 @@
 # declutter
 A small JavaScript library that removes clutter from HTML.
 
+**Note: Although this already works okay on most websites, it's not yet ready for production.**
+
 The core algorithm is based on the original Arc90's [Readability](https://code.google.com/p/arc90labs-readability/) project, but significantly improved.
 
 I built this library while adding web clipping support to [Quiver: The Programmer's Notebook](http://happenapps.com/#quiver).
