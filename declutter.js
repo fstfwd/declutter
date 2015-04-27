@@ -134,7 +134,7 @@ NodeRef.prototype.cloneNode = function(doc) {
       }
 
       // Output contentScore for debugging
-      el.setAttribute('contentScore', nodeRef.contentScore);
+      //el.setAttribute('contentScore', nodeRef.contentScore);
 
       if (tagName === 'PRE') {
         el.innerHTML = nodeRef.node.textContent;
