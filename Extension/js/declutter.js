@@ -17,51 +17,52 @@ var regexps = {
   positive: /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/i,
   negative: /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/i,
   extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
-  divToPElements: /<(a|blockquote|dl|div|img|ol|p|pre|table|ul)/i,
-  replaceBrs: /(<br[^>]*>[ \n\r\t]*){2,}/gi,
-  replaceFonts: /<(\/?)font[^>]*>/gi,
-  trim: /^\s+|\s+$/g,
-  normalize: /\s{2,}/g,
-  killBreaks: /(<br\s*\/?>(\s|&nbsp;?)*){1,}/g,
-  videos: /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
+  emptyTagsToKeep: /^(img|br)$/i, 
+  block: /^(p|div|article|section)$/i
 };
+
+var tagsToIgnore = ['head','script','noscript','style','meta','link','object','form','textarea','header','footer','nav','iframe','h1','hr'];
+
+function trim(str) {
+  return str.replace(/^\s+|\s+$/g, '');
+}
 
 function contentScoreForTagName(tagName) {
   var contentScore = 0;
   switch (tagName) {
-    case 'MAIN':
-    case 'ARTICLE':
+    case 'main':
+    case 'article':
       contentScore += 10;
       break;
-    case 'SECTION':
+    case 'section':
       contentScore += 8;
       break;
-    case 'P':
-    case 'DIV':
+    case 'p':
+    case 'div':
       contentScore += 5;
       break;
-    case 'PRE':
-    case 'TD':
-    case 'BLOCKQUOTE':
+    case 'pre':
+    case 'td':
+    case 'blockquote':
       contentScore += 3;
       break;
-    case 'ADDRESS':
-    case 'OL':
-    case 'UL':
-    case 'DL':
-    case 'DD':
-    case 'DT':
-    case 'LI':
-    case 'FORM':
+    case 'address':
+    case 'ol':
+    case 'ul':
+    case 'dl':
+    case 'dd':
+    case 'dt':
+    case 'li':
+    case 'form':
       contentScore -= 3;
       break;
-    case 'H1':
-    case 'H2':
-    case 'H3':
-    case 'H4':
-    case 'H5':
-    case 'H6':
-    case 'TH':
+    case 'h1':
+    case 'h2':
+    case 'h3':
+    case 'h4':
+    case 'h5':
+    case 'h6':
+    case 'th':
       contentScore -= 5;
       break;
   }
@@ -86,38 +87,30 @@ function contentScoreForId(id) {
   return contentScore;
 }
 
-function initializeNode(node) {
-  node.readability = {"contentScore": 0};
-  node.readability.contentScore += contentScoreForTagName(node.tagName);
-  node.readability.contentScore += contentScoreForClassName(node.className);
-  node.readability.contentScore += contentScoreForId(node.id);
-}
-
-function getInnerText(node) {
-  return node.textContent;
-}
-
-function getLinkDensity(node) {
-  var links = node.getElementsByTagName('a');
-  var textLength = getInnerText(node).length;
-  var linkLength = 0;
-  for (var i=0, l=links.length; i<l; i++) {
-    linkLength += getInnerText(links[i]).length;
+function keepEmptyTag(tagName, node) {
+  if (tagName === 'br') return true;
+  if (tagName === 'img') {
+    var src = node.getAttribute('src') || '';
+    if (trim(src).length > 0 && !/data:image/.test(src)) {
+      return true;
+    }
   }
-  return linkLength / textLength;
+  return false;
 }
 
 
 /**
- * A Lightweight Node Object
+ * NodeRef: a lightweight object referencing a node
  */
 
-function NodeRef(node, type) {
+function NodeRef(node, type, text) {
   this.node = node;
   this.type = type;
+  this.text = text;
   this.childNodes = [];
   this.parentNode = null;
-  this.textScore = 0;
+  this.contentScore = 0;
+  this.textScores = [];
   this.isBlock = false;
 }
 
@@ -129,7 +122,7 @@ NodeRef.prototype.appendChild = function(child) {
 NodeRef.prototype.cloneNode = function(doc) {
   var cloneNode = function(nodeRef, doc) {
     if (nodeRef.type === 'text') {
-      return doc.createTextNode(nodeRef.node.nodeValue);
+      return doc.createTextNode(nodeRef.text);
     } else if (nodeRef.type === 'element') {
       var tagName = nodeRef.node.tagName;
       var el = doc.createElement(tagName);
@@ -139,6 +132,9 @@ NodeRef.prototype.cloneNode = function(doc) {
         el.setAttribute('src', nodeRef.node.getAttribute('src') || '');
         el.setAttribute('alt', nodeRef.node.getAttribute('alt') || '');
       }
+
+      // Output contentScore for debugging
+      //el.setAttribute('contentScore', nodeRef.contentScore);
 
       if (tagName === 'PRE') {
         el.innerHTML = nodeRef.node.textContent;
@@ -157,88 +153,27 @@ NodeRef.prototype.cloneNode = function(doc) {
 
 
 /**
- * Declutter
+ * TextScore
  */
 
-function cleanNode(node) {
-  if (node.nodeType === 3) { // Text node
-    var innerText = node.nodeValue.replace(regexps.normalize, ' ').trim();
-    var nodeRef = new NodeRef(node, 'text');
-    if (innerText.length > 0) {
-      nodeRef.textScore = 0.2;
-      nodeRef.textScore += Math.floor(innerText.length / 25);
-    } else {
-      nodeRef.textScore = 0;
-    }
-    return nodeRef;
-  } else if (node.nodeType === 1) { // Element node
-    // Remove nodes that are unlikely candidates
-    var unlikelyMatchString = node.className + ' ' + node.id;
-    if (regexps.unlikelyCandidates.test(unlikelyMatchString) && !regexps.okMaybeItsACandidate.test(unlikelyMatchString)) return null;
-
-    var tagName = node.tagName;
-    if (/^(head|script|noscript|style|meta|link|object|form|textarea)$/i.test(tagName)) return null;
-
-    if (tagName === 'IMG') {
-      var src = node.getAttribute('src') || '';
-      if (src.trim().length === 0 || /data:image/.test(src)) {
-        return null;
-      }
-    }
-
-    // Create a NodeRef
-    var el = new NodeRef(node, 'element');
-
-    if (tagName !== 'PRE') {
-      var childNodes = node.childNodes;
-      for (var i=0, l=childNodes.length; i<l; i++) {
-        var childEl = cleanNode(childNodes[i]);
-        if (childEl) {
-          el.appendChild(childEl);
-          if (childEl.node.tagName !== 'A') {
-            if (childEl.textScore > 0) {
-              el.textScore += childEl.textScore;
-            } else {
-              el.textScore -= 1;
-            }
-          }
-        }
-      }
-
-      if (/^(DIV|P|PRE|FIGURE|FIGCAPTION|H1|H2)$/.test(tagName)) {
-        el.isBlock = true;
-        el.textScore -= 1;
-      } else if (tagName === 'UL' || tagName === 'OL' || tagName === 'LI') {
-        el.textScore -= 5;
-      } else if (tagName === 'IMG') {
-        el.textScore += 10;
-      }
-    }
-    return el;
-  }
-  return null;
+function TextScore(value) {
+  this.value = value;
+  this.step = 0;
 }
 
-var topCandidate = null;
-
-function prune(nodeRef) {
-  var newChildNodes = [];
-  for (var i=0, l=nodeRef.childNodes.length; i<l; i++) {
-    var childNodeRef = nodeRef.childNodes[i];
-    if (!(childNodeRef.isBlock) || childNodeRef.textScore > 0) {
-      newChildNodes.push(childNodeRef);
-    }
-  }
-  nodeRef.childNodes = newChildNodes;
-
-  for (var i=0, l=nodeRef.childNodes.length; i<l; i++) {
-    prune(nodeRef.childNodes[i]);
-  }
-
-  if (!topCandidate || nodeRef.textScore > topCandidate.textScore) {
-    topCandidate = nodeRef;
+TextScore.prototype.decay = function() {
+  this.step += 1;
+  if (this.step === 3) {
+    this.value = this.value / 2;
+  } else if (this.step > 3) {
+    this.value = 0;
   }
 }
+
+
+/**
+ * Declutter
+ */
 
 var start = 0;
 function profileStart() {
@@ -251,82 +186,111 @@ function profile (msg) {
   start = t;
 }
 
-function declutter(page, doc) {
-  profileStart();
+function declutter(node, doc) {
+  // First, traverse the node tree, construct a NodeRef object for each node
+  // and assign it a content score.
+  // A content score measures how likely a node contains content. It is based on
+  // several factors: word count, link density, tagName, className, id, etc.
+  var nodeRef = rankNode(node);
 
-  var nodeRef = cleanNode(page);
+  // Find the NodeRef object with the highest content score
+  var topCandidate = findTopCandidate(nodeRef);
 
-  profile('cleanNode');
-
-  topCandidate = null;
-
-  prune(nodeRef);
-  
-  profile('prune nodeRef');
-
+  // Output topCandidate as a Node tree
   var articleContent = doc.createElement("DIV");
-  articleContent.appendChild(topCandidate.cloneNode(doc));
-
-  profile('cloneNode');
-
+  articleContent.appendChild(prune(topCandidate).cloneNode(doc));
   return articleContent;
+}
 
-  // var candidates = [];
-  // for (var i=0, l=nodesToScore.length; i<l; i++) {
-  //     var parentNode = nodesToScore[i].parentNode;
-  //     var grandParentNode = parentNode ? parentNode.parentNode : null;
-  //     var innerText = getInnerText(nodesToScore[i].node);
+function rankNode(node) {
+  if (node.nodeType === 3) { // Text node
+    var text = node.nodeValue;
 
-  //     if(!parentNode || typeof(parentNode.node.tagName) === 'undefined') {
-  //         continue;
-  //     }
+    // Ignore empty text nodes
+    if (trim(text).length === 0) return null;
 
-  //     /* If this paragraph is less than 25 characters, don't even count it. */
-  //     if (innerText.length < 25) continue;
+    // Collpase whitespaces, but don't trim spaces at two ends
+    text = text.replace(/\s+/g, ' ');
 
-  //     /* Initialize readability data for the parent. */
-  //     if (typeof parentNode.readability === 'undefined') {
-  //         initializeNode(parentNode);
-  //         candidates.push(parentNode);
-  //     }
+    // Cache the clean text in a NodeRef object
+    var ref = new NodeRef(node, 'text', text);
 
-  //     /* Initialize readability data for the grandparent. */
-  //     if (grandParentNode && typeof(grandParentNode.readability) === 'undefined' && typeof(grandParentNode.node.tagName) !== 'undefined') {
-  //         initializeNode(grandParentNode);
-  //         candidates.push(grandParentNode);
-  //     }
-      
-  //     /* Add the score to the parent. The grandparent gets half. */
-  //     parentNode.readability.contentScore += contentScore;
+    // Assign a text score based on the character count
+    var textScore = new TextScore(Math.floor(text.length / 25));
+    ref.textScores.push(textScore);
+    return ref;
+  } else if (node.nodeType === 1) { // Element node
+    // Ignore nodes that are unlikely to be main content
+    var matchString = node.className + ' ' + node.id;
+    if (regexps.unlikelyCandidates.test(matchString) && !regexps.okMaybeItsACandidate.test(matchString)) return null;
 
-  //     if(grandParentNode) {
-  //         grandParentNode.readability.contentScore += contentScore/2;             
-  //     }
-  // }
+    // Ignore nodes with certain tag names
+    var tagName = node.tagName.toLowerCase();
+    if (tagsToIgnore.indexOf(tagName) !== -1) return null;
 
-  // profile('assign content scores');
+    // Create a NodeRef object
+    var ref = new NodeRef(node, 'element');
+    ref.isBlock = regexps.block.test(tagName);
 
-  // var topCandidate = null;
-  // for (var i=0, l=candidates.length; i<l; i++) {
-  //     /**
-  //      * Scale the final candidates score based on link density. Good content should have a
-  //      * relatively small link density (5% or less) and be mostly unaffected by this operation.
-  //     **/
-  //     candidates[i].readability.contentScore *= 1 - getLinkDensity(candidates[i].node);
+    // Clean child nodes
+    for (var i=0, l=node.childNodes.length; i<l; i++) {
+      var childRef = rankNode(node.childNodes[i]);
+      if (childRef) {
+        ref.appendChild(childRef);
 
-  //     //console.log('Candidate: ' + candidates[i] + " (" + candidates[i].node.className + ":" + candidates[i].node.id + ") with score " + candidates[i].readability.contentScore);
+        if (childRef.contentScore === -1) {
+          ref.contentScore -= 1;
+        } else {
+          for (var j=0, m=childRef.textScores.length; j<m; j++) {
+            var textScore = childRef.textScores[j];
 
-  //     if (!topCandidate || candidates[i].readability.contentScore > topCandidate.readability.contentScore) {
-  //         topCandidate = candidates[i]; }
-  // }
+            // Text scores decay when they encounter a block element
+            if (ref.isBlock) textScore.decay();
 
-  // profile('find top candidate');
+            if (textScore.value > 0) {
+              ref.contentScore += textScore.value;
+              ref.textScores.push(textScore);
+            }
+          }
+        }
+      }
+    }
 
-  // var articleContent = doc.createElement("DIV");
-  // articleContent.appendChild(topCandidate.cloneNode(doc));
+    // If a node is empty or has a negative content score, set its score to -1.
+    if ((ref.childNodes.length === 0 && !keepEmptyTag(tagName, node)) || ref.contentScore < 0) {
+      ref.contentScore = -1;
+    }
+    return ref;
+  }
 
-  // profile('clone top candidate');
-  // return articleContent;
+  // Ignore other node types (comments, etc.)
+  return null;
+}
+
+function findTopCandidate(nodeRef) {
+  var topCandidate = nodeRef;
+  for (var i=0, l=nodeRef.childNodes.length; i<l; i++) {
+    var c = findTopCandidate(nodeRef.childNodes[i]);
+    if (c.contentScore > topCandidate.contentScore) {
+      topCandidate = c;
+    }
+  }
+  return topCandidate;
+}
+
+function prune(nodeRef) {
+  // Traverse backwards so deleting an item doesn't affect the traversal
+  for (var i=nodeRef.childNodes.length-1; i>=0; i--) {
+    if (nodeRef.childNodes[i].contentScore < 0) {
+      nodeRef.childNodes.splice(i, 1);
+    }
+  }
+
+  for (var i=0, l=nodeRef.childNodes.length; i<l; i++) {
+    prune(nodeRef.childNodes[i]);
+  }
+
+  return nodeRef;
 }
 
 
