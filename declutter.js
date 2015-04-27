@@ -110,6 +110,7 @@ function NodeRef(node, type, text) {
   this.childNodes = [];
   this.parentNode = null;
   this.contentScore = 0;
+  this.textScores = [];
   this.isBlock = false;
 }
 
@@ -148,6 +149,25 @@ NodeRef.prototype.cloneNode = function(doc) {
     return null;
   }
   return cloneNode(this, doc);
+}
+
+
+/**
+ * TextScore
+ */
+
+function TextScore(value) {
+  this.value = value;
+  this.step = 0;
+}
+
+TextScore.prototype.decay = function() {
+  this.step += 1;
+  if (this.step === 3) {
+    this.value = this.value / 2;
+  } else if (this.step > 3) {
+    this.value = 0;
+  }
 }
 
 
@@ -195,8 +215,9 @@ function rankNode(node) {
     // Cache the clean text in a NodeRef object
     var ref = new NodeRef(node, 'text', text);
 
-    // Assign a content score based on character count
-    ref.contentScore = Math.floor(text.length / 25);
+    // Assign a text score based on the character count
+    var textScore = new TextScore(Math.floor(text.length / 25));
+    ref.textScores.push(textScore);
     return ref;
   } else if (node.nodeType === 1) { // Element node
     // Ignore nodes that are unlikely to be main content
@@ -216,12 +237,21 @@ function rankNode(node) {
       var childRef = rankNode(node.childNodes[i]);
       if (childRef) {
         ref.appendChild(childRef);
-        
-        if (ref.isBlock) {
-          // Content score decays when it encounters a block element
-          ref.contentScore += childRef.contentScore * 0.5;
+
+        if (childRef.contentScore === -1) {
+          ref.contentScore -= 1;
         } else {
-          ref.contentScore += childRef.contentScore;
+          for (var j=0, m=childRef.textScores.length; j<m; j++) {
+            var textScore = childRef.textScores[j];
+
+            // Text scores decay when they encounter a block element
+            if (ref.isBlock) textScore.decay();
+
+            if (textScore.value > 0) {
+              ref.contentScore += textScore.value;
+              ref.textScores.push(textScore);
+            }
+          }
         }
       }
     }
